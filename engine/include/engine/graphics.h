@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include "sdl++/sdl++.h"
 #include "base.h"

@@ -10,3 +10,5 @@ target_compile_options(game PRIVATE "-std=c++17")
 add_subdirectory(engine)
 target_link_libraries(game engine)
 
+add_subdirectory(tools)
+

@@ -5,18 +5,24 @@
 #include <utility>
 #include <string>
 #include <complex>
+#include <exception>
+
+// TODO Don't take `unique_ptr`s in interfaces
 
 namespace Sdl {
 
-struct Window_deleter {
+class Window_deleter {
+public:
         void operator()(SDL_Window* window) const noexcept;
 };
 
-struct Renderer_deleter {
+class Renderer_deleter {
+public:
         void operator()(SDL_Renderer* renderer) const noexcept;
 };
 
-struct Texture_deleter {
+class Texture_deleter {
+public:
         void operator()(SDL_Texture* texture) const noexcept;
 };
 
@@ -33,12 +39,13 @@ using Window   = std::unique_ptr<SDL_Window, Window_deleter>;
 using Renderer = std::unique_ptr<SDL_Renderer, Renderer_deleter>;
 using Texture  = std::unique_ptr<SDL_Texture, Texture_deleter>;
 
-class Error: public std::exception {
+class Error : public std::exception {
 public:
         char const* what() const noexcept override;
 };
 
-struct Manager {
+class Manager {
+public:
         Manager();
         ~Manager();
 
