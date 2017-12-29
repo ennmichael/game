@@ -1,5 +1,14 @@
-#include <string>
 #include "engine/graphics.h"
+#include <string>
+
+
+
+#include <iostream>
+
+
+
+
+
 
 using namespace std::string_literals;
 using namespace std::complex_literals;
@@ -8,8 +17,9 @@ int main()
 {
         auto const [window, renderer] = Sdl::create_window_and_renderer("Title"s, 500, 500);
 
-        auto spr = Engine::Graphics::Sprite::load_from_file(renderer, "../res/run.png"s, 8);
-        auto animation = Engine::Graphics::Animation(spr, 210);
+        auto spr = Engine::Graphics::Sprite::load_from_file(renderer, "../res/sprites/run"s);
+        auto animation = spr.animation();
+
         auto position = 0.0 + 150.0i;
 
         auto quit = false;

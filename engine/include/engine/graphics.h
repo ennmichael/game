@@ -6,17 +6,21 @@
 
 namespace Engine::Graphics {
 
+class Animation;
+
 class Sprite {
 public:
         static Sprite load_from_file(Sdl::Renderer const& renderer,
-                                     std::string const& path,
-                                     int frame_count); // TODO Lose the frame_count parameter
+                                     std::string const& base_path);
 
-        Sprite(Sdl::Texture texture, int frame_count) noexcept;
+        Sprite(Sdl::Texture texture, int frame_count, int frame_delay) noexcept;
         
         void frame_advance() noexcept;
+        int frame_delay() const noexcept;
+        Animation animation() noexcept;
+
         void render(Sdl::Renderer const& renderer,
-                    Engine::Complex_number position) noexcept;
+                    Engine::Complex_number position) noexcept; 
 
 private:
         Sdl::Rect source_rect() const noexcept;
@@ -24,6 +28,7 @@ private:
 
         Sdl::Texture texture_;
         int frame_count_;
+        int frame_delay_;
         int current_frame_ = 0;
         int frame_width_;
         int frame_height_;
@@ -31,17 +36,14 @@ private:
 
 class Animation {
 public:
-        Animation(Sprite& sprite, int frame_delay) noexcept;
+        explicit Animation(Sprite& sprite) noexcept;
 
         void frame_advance() noexcept;
 
 private:
         Sprite* sprite_;
-        int max_frame_delay_;
         int remaining_frame_delay_;
 };
-
-// TODO Probably an Animation class
 
 }
 
