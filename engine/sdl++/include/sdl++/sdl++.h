@@ -6,6 +6,7 @@
 #include <string>
 #include <complex>
 #include <exception>
+#include <optional>
 
 // TODO Don't take `unique_ptr`s in interfaces
 
@@ -28,6 +29,8 @@ public:
 
 using Rect  = SDL_Rect;
 using Color = SDL_Color;
+using Event = SDL_Event;
+using Optional_event = std::optional<Event>;
 
 namespace Colors {
 
@@ -78,6 +81,10 @@ struct Dimensions {
 };
 
 Dimensions texture_dimensions(Texture const& texture);
+
+int get_ticks() noexcept;
+
+Optional_event poll_event();
 
 }
 

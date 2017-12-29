@@ -85,5 +85,18 @@ Dimensions texture_dimensions(Texture const& texture)
         return {width, height};
 }
 
+int get_ticks() noexcept
+{
+        return SDL_GetTicks();
+}
+
+Optional_event poll_event()
+{
+        Event event;
+        if (SDL_PollEvent(&event))
+                return event;
+        return std::nullopt;
+}
+
 }
 

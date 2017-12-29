@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.1.0)
 
 project(sdl++)
 add_library(sdl++ STATIC src/sdl++.cpp)
@@ -6,9 +6,7 @@ add_library(sdl++ STATIC src/sdl++.cpp)
 target_include_directories(sdl++ PUBLIC "${sdl++_SOURCE_DIR}/include")
 target_include_directories(sdl++ PRIVATE "${sdl++_SOURCE_DIR}/include/sdl++")
 
-target_compile_options(sdl++ PRIVATE "-Wall")
-target_compile_options(sdl++ PRIVATE "-Wextra")
-target_compile_options(sdl++ PRIVATE "-std=c++17")
+add_compile_options(sdl++)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${sdl++_SOURCE_DIR}/cmake")
 
