@@ -12,29 +12,39 @@
 #include <exception>
 #include <memory>
 
-namespace Png::Chunk_handling {
+namespace Png {
 
 using Bytes = std::vector<std::byte>;
 using Chunks = std::unordered_map<std::string, Bytes>;
 
-class Invalid_png_file : public std::exception {};
+class Cant_open_file : public std::exception {};
 
 class Png_struct_deleter {
 public:
-        void operator()(png_struct* png)
-        {
-                png_destroy_read_struct(&png, nullptr, nullptr);
-        }
+        void operator()(png_struct* png);
 };
 
-using Unique_png = std::unique_ptr<png_struct, Png_struct_deleter>;
+class Png_info_deleter {
+public:
+        void operator()(png_info* info);
+};
 
-Unique_png open_unique_png(std::string const& path);
+using Unique_png_struct = std::unique_ptr<png_struct, Png_struct_deleter>;
+using Unique_png_info = std::unique_ptr<png_info, Png_info_deleter>;
 
-Chunks read_nonstandard_chunks(png_struct& png);
-void write_nonstandard_chunks(Chunks& chunks, png_struct& png);
-// I am certain that the `chunks` parameter may as well be const,
-// but, unfortunately, this is libpng API we're talking about.
+class Png_file {
+public:
+        static Png_file open(std::string const& path);
+
+        explicit Png_file(Unique_png_struct png_struct) noexcept;
+
+        Chunks read_nonstandard_chunks();
+        void write_nonstandard_chunks(Chunks& chunks);
+
+private:
+        Unique_png_struct struct_;
+        Unique_png_info info_;
+};
 
 }
 
