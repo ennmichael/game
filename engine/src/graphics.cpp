@@ -1,7 +1,6 @@
 #include <utility>
 #include "graphics.h"
 #include "config_loader.h"
-#include "utility.h"
 
 using namespace std::string_literals;
 
@@ -10,30 +9,25 @@ namespace Engine::Graphics {
 Sprite Sprite::load_from_file(Sdl::Renderer const& renderer, 
                               std::string const& path)
 {
-        struct Sprite_config {
-                static Sprite_config load_from_file(std::string const& path)
-                {
-                        return Sprite_config(load_config_file(path));
-                }
-
-                explicit Sprite_config(Config const& config)
-                        : frame_count(Utility::expect_variant<int const>(config.at("frame_count"s)))
-                        , frame_delay(Utility::expect_variant<int const>(config.at("frame_delay"s)))
-                {}
-
-                int frame_count;
-                int frame_delay;
+        auto const sprite_properties =
+        [](Config const& config)
+        {
+                return std::pair(
+                        config.value<int>("frame_count"s),
+                        config.value<int>("frame_delay"s)
+                );
         };
 
         auto const image_path = path + ".png"s;
         auto const config_path = path + ".sheet.config"s;
 
-        auto const sprite_config = Sprite_config::load_from_file(config_path);
+        auto const sprite_config = Config::load_from_file(config_path);
+        auto const [frame_count, frame_delay] = sprite_properties(sprite_config);
         auto texture = Sdl::load_texture_from_file(renderer, image_path);
 
         return Sprite(std::move(texture),
-                      sprite_config.frame_count,
-                      sprite_config.frame_delay);
+                      frame_count,
+                      frame_delay);
 }
 
 Sprite::Sprite(Sdl::Texture texture, int frame_count, int frame_delay) noexcept
@@ -64,11 +58,13 @@ Animation Sprite::animation() noexcept
 }
 
 void Sprite::render(Sdl::Renderer const& renderer, 
-                    Engine::Complex_number position) noexcept
+                    Engine::Complex_number position,
+                    double angle,
+                    Sdl::Flip flip) noexcept
 {
         auto const src = source_rect();
         auto const dst = destination_rect(position);
-        Sdl::render_copy(renderer, texture_, src, dst);
+        Sdl::render_copy(renderer, texture_, src, dst, angle, flip);
 }
 
 Sdl::Rect Sprite::source_rect() const noexcept

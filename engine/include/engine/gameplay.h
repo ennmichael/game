@@ -20,6 +20,8 @@ struct Keyboard_signals {
 struct Signals {
         Keyboard_signals key_pressed;
         Keyboard_signals key_released;
+        Keyboard_signals key_down;
+        Keyboard_signals key_up;
 
         signals::signal<void()> frame_advance;
         signals::signal<void()> quit;
@@ -27,7 +29,7 @@ struct Signals {
 
 using Signal_setup_function = std::function<void(Signals&)>;
 
-void main_loop(Signal_setup_function signal_setup_function, int fps);
+void main_loop(Signals const& signals, int fps);
 
 }
 

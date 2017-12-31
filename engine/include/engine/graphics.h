@@ -20,7 +20,9 @@ public:
         Animation animation() noexcept;
 
         void render(Sdl::Renderer const& renderer,
-                    Engine::Complex_number position) noexcept; 
+                    Engine::Complex_number position,
+                    double angle=0,
+                    Sdl::Flip flip=Sdl::Flip::none) noexcept; 
 
 private:
         Sdl::Rect source_rect() const noexcept;

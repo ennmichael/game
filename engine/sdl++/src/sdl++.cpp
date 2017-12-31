@@ -1,5 +1,6 @@
-#include "SDL_image.h"
 #include "sdl++.h"
+#include "SDL_image.h"
+#include <type_traits>
 
 namespace Sdl {
 
@@ -67,9 +68,17 @@ void render_present(Renderer const& renderer)
 void render_copy(Renderer const& renderer, 
                  Texture const& texture, 
                  Rect source, 
-                 Rect destination)
+                 Rect destination,
+                 double angle,
+                 Flip flip)
 { // TODO Error handling
-        SDL_RenderCopy(renderer.get(), texture.get(), &source, &destination);
+        SDL_RenderCopyEx(renderer.get(),
+                        texture.get(),
+                        &source,
+                        &destination,
+                        angle,
+                        nullptr, // Center point, fine this way
+                        static_cast<SDL_RendererFlip>(flip));
 }
 
 Texture load_texture_from_file(Renderer const& renderer, std::string const& path)

@@ -7,6 +7,7 @@
 #include <complex>
 #include <exception>
 #include <optional>
+#include <type_traits>
 
 // TODO Don't take `unique_ptr`s in interfaces
 
@@ -30,6 +31,7 @@ public:
 using Rect  = SDL_Rect;
 using Color = SDL_Color;
 using Event = SDL_Event;
+using Keycode = SDL_Keycode;
 using Optional_event = std::optional<Event>;
 
 namespace Colors {
@@ -61,18 +63,27 @@ public:
 
 using WindowAndRenderer = std::pair<Window, Renderer>;
 
-WindowAndRenderer create_window_and_renderer(std::string const& title, 
-                                             int width, 
+WindowAndRenderer create_window_and_renderer(std::string const& title,
+                                             int width,
                                              int height,
                                              Color background_color=Colors::white);
 
 void render_clear(Renderer const& renderer);
 void render_present(Renderer const& renderer);
 
+enum class Flip {
+        none = SDL_FLIP_NONE,
+        vertical = SDL_FLIP_VERTICAL,
+        horizontal = SDL_FLIP_HORIZONTAL
+};
+
 void render_copy(Renderer const& renderer, 
                  Texture const& texture, 
                  Rect source, 
-                 Rect destination);
+                 Rect destination,
+                 double angle=0,
+                 Flip flip=Flip::none);
+
 Texture load_texture_from_file(Renderer const& renderer, std::string const& path);
 
 struct Dimensions {
