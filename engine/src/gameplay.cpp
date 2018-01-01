@@ -1,5 +1,4 @@
 #include "gameplay.h"
-#include "sdl++/sdl++.h"
 #include <unordered_map>
 #include <optional>
 #include <exception>
@@ -42,64 +41,61 @@ private:
 
 void main_loop(Signals const& signals, int fps)
 {
-        enum class Key_state {
-                Pressed,
-                Down,
-                Released,
-                Up
-        };
+        using Keyboard = std::unordered_map<Sdl::Scancode, Key_state>;
 
-        struct Keyboard {
-                void update(Sdl::Event const& event)
+        auto const update_keyboard =
+        [](Keyboard& keyboard, Signals const& signals)
+        {
+                auto const update_key =
+                [](Keyboard& keyboard, Sdl::Scancode scancode)
                 {
-                        update_key_states();
-                        
-                        switch (event.type) {
-                                case SDL_KEYDOWN:
-                                        press(event.key.keysym.sym);
-                                        break;
-                                case SDL_KEYUP:
-                                        std::cout << "Release\n";
-                                        std::cout << "Pressed: " << static_cast<int>(event.key.state == SDL_PRESSED) << '\n';
-                                        std::cout << "Repeat: " << static_cast<int>(event.key.repeat) << '\n';
-                                        release(event.key.keysym.sym);
-                                        break;
-                                default:
-                                        break;
-                        }
+                        auto const advance_key =
+                        [](Keyboard& keyboard,
+                           Sdl::Scancode scancode,
+                           Key_state immediate_state,
+                           Key_state longterm_state)
+                        {
+                                try {
+                                        auto& state = keyboard.at(scancode);
+                                        if (state == immediate_state)
+                                                state = longterm_state;
+                                        else if (state != longterm_state)
+                                                state = immediate_state;
+                                } catch (std::out_of_range const&) {
+                                        keyboard[scancode] = immediate_state;
+                                }
+                        };
+
+                        auto const down =
+                        [&advance_key](Keyboard& keyboard, Sdl::Scancode scancode)
+                        {
+                                advance_key(keyboard,
+                                            scancode,
+                                            Key_state::Pressed,
+                                            Key_state::Down);
+                        };
+
+                        auto const up =
+                        [&advance_key](Keyboard& keyboard, Sdl::Scancode scancode)
+                        {
+                                advance_key(keyboard,
+                                            scancode,
+                                            Key_state::Released,
+                                            Key_state::Up);
+                        };
+
+                        auto const key_is_down = SDL_GetKeyboardState(nullptr)[scancode];
+
+                        if (key_is_down)
+                                down(keyboard, scancode);
+                        else
+                                up(keyboard, scancode);
+                };
+
+                for (auto const& [scancode, key_states] : signals.keyboard) {
+                        (void)key_states;
+                        update_key(keyboard, scancode);
                 }
-
-                void press(Sdl::Keycode keycode)
-                {
-                        try {
-                                auto& state = key_states[keycode];
-                                if (state != Key_state::Down)
-                                        state = Key_state::Pressed;
-                        } catch (std::out_of_range const&) {
-                                key_states[keycode] = Key_state::Pressed;
-                        }
-                }
-
-                void release(Sdl::Keycode keycode)
-                {
-                        auto& state = key_states[keycode];
-                        if (state != Key_state::Up)
-                                state = Key_state::Released;
-                }
-
-                void update_key_states() noexcept
-                {
-                        for (auto& [keycode, state] : key_states) {
-                                (void)keycode;
-
-                                if (state == Key_state::Pressed)
-                                        state = Key_state::Down;
-                                else if (state == Key_state::Released)
-                                        state = Key_state::Up;
-                        }
-                }
-
-                std::unordered_map<Sdl::Keycode, Key_state> key_states;
         };
 
         auto const calculate_frame_delay =
@@ -110,12 +106,8 @@ void main_loop(Signals const& signals, int fps)
         };
 
         auto const dispatch_event =
-        [](Signals const& signals,
-           Keyboard& keyboard,
-           Sdl::Event const& event)
+        [](Sdl::Event const& event, Signals const& signals)
         {
-                keyboard.update(event);
-
                 if (event.type == SDL_QUIT) {
                         signals.quit();
                         return true;
@@ -125,38 +117,12 @@ void main_loop(Signals const& signals, int fps)
         };
 
         auto const dispatch_keyboard =
-        [](Signals const& signals, Keyboard const& keyboard)
+        [](Keyboard const& keyboard, Signals const& signals)
         {
-                auto const key_pointer =
-                [](Sdl::Keycode keycode) noexcept -> signals::signal<void()> Keyboard_signals::*
-                {
-                        switch (keycode) {
-                                case SDLK_LEFT:  return &Keyboard_signals::left_arrow;
-                                case SDLK_RIGHT: return &Keyboard_signals::right_arrow;
-                                case SDLK_SPACE: return &Keyboard_signals::spacebar;
-                                default:         return nullptr;
-                        }
-                };
-
-                auto const keyboard_signals_pointer =
-                [](Key_state key_state) noexcept -> Keyboard_signals Signals::*
-                {
-                        switch (key_state) {
-                                case Key_state::Up:       return &Signals::key_up;
-                                case Key_state::Down:     return &Signals::key_down;
-                                case Key_state::Pressed:  return &Signals::key_pressed;
-                                case Key_state::Released: return &Signals::key_released;
-                                default:
-                                        assert(false);
-                                        return nullptr;
-                        }
-                };
-
-                for (auto const [keycode, state] : keyboard.key_states) {
-                        auto const key = key_pointer(keycode);
-                        if (key) {
-                                auto const keyboard_signals = keyboard_signals_pointer(state);
-                                (signals.*keyboard_signals.*key)();
+                for (auto const& [scancode, key_state] : keyboard) {
+                        try {
+                                signals.keyboard.at(scancode).at(key_state)();
+                        } catch (std::out_of_range const&){
                         }
                 }
         };
@@ -171,9 +137,11 @@ void main_loop(Signals const& signals, int fps)
                 while (auto const event = Sdl::poll_event()) {
                         // TODO We're handling quitting incorrectly
                         // There should be a `main_loop` or `game` object and `.quit`
+                        
+                        update_keyboard(keyboard, signals);
+                        dispatch_keyboard(keyboard, signals);
 
-                        quit = dispatch_event(signals, keyboard, *event);
-                        dispatch_keyboard(signals, keyboard);
+                        quit = dispatch_event(*event, signals);
                 }
 
                 if (timer.ready())

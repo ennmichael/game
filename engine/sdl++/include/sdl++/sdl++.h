@@ -31,7 +31,7 @@ public:
 using Rect  = SDL_Rect;
 using Color = SDL_Color;
 using Event = SDL_Event;
-using Keycode = SDL_Keycode;
+using Scancode = SDL_Scancode;
 using Optional_event = std::optional<Event>;
 
 namespace Colors {

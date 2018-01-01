@@ -1,30 +1,26 @@
 #pragma once
 
 #include "boost/signals2.hpp"
+#include "sdl++/sdl++.h"
 #include <functional>
+#include <unordered_map>
 
 namespace Engine::Gameplay {
 
-namespace {
-
-namespace signals = boost::signals2;
-
-}
-
-struct Keyboard_signals {
-        signals::signal<void()> left_arrow;
-        signals::signal<void()> right_arrow;
-        signals::signal<void()> spacebar;
+enum class Key_state {
+        Pressed,
+        Released,
+        Down,
+        Up
 };
 
-struct Signals {
-        Keyboard_signals key_pressed;
-        Keyboard_signals key_released;
-        Keyboard_signals key_down;
-        Keyboard_signals key_up;
+using Key_state_signals = std::unordered_map<Key_state, boost::signals2::signal<void()>>;
+using Keyboard_signals = std::unordered_map<Sdl::Scancode, Key_state_signals>;
 
-        signals::signal<void()> frame_advance;
-        signals::signal<void()> quit;
+struct Signals {
+        Keyboard_signals keyboard;
+        boost::signals2::signal<void()> frame_advance;
+        boost::signals2::signal<void()> quit;
 };
 
 using Signal_setup_function = std::function<void(Signals&)>;

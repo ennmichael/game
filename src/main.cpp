@@ -43,24 +43,17 @@ void main_function()
 
         Engine::Gameplay::Signals signals;
 
-        signals.key_pressed.spacebar.connect(
-                []
+        signals.keyboard[SDL_SCANCODE_SPACE][Engine::Gameplay::Key_state::Pressed].connect(
+                [] // TODO We could ease this syntax a little for sure
                 {
-                        std::cout << "Pressed\n";
+                        std::cout << "Space pressed\n";
                 }
         );
 
-        signals.key_released.spacebar.connect(
+        signals.keyboard[SDL_SCANCODE_SPACE][Engine::Gameplay::Key_state::Released].connect(
                 []
                 {
-                        std::cout << "Released\n";
-                }
-        );
-
-        signals.key_pressed.left_arrow.connect(
-                []
-                {
-                        std::cout << "Left arrow\n";
+                        std::cout << "Space released\n";
                 }
         );
 
