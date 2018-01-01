@@ -19,9 +19,8 @@ enum class Direction {
         left, right
 };
 
-struct Object_position { // I plan for every object (i.e. the main character, 
-                         // the enemies, the whatever) to have a coordinate and a velocity,
-        void update()    // so I group the two in this struct
+struct Object_position {
+        void update()
         {
                 coordinates += velocity;
         }
@@ -102,12 +101,12 @@ private:
 
 void draw_player(Sdl::Renderer const& renderer, 
                  Lightbulb_man const& lightbulb_man,
-                 Engine::Sprite const& sprite)
+                 Engine::Sprite const& lightbulb_man_spriteite)
 {
         auto const flip = (lightbulb_man.direction() == Direction::left) ?
                 Sdl::Flip::horizontal : Sdl::Flip::none
 
-        sprite.render(renderer, lightbulb_man.position(), 0, flip);
+        lightbulb_man_spriteite.render(renderer, lightbulb_man.position(), 0, flip);
 }
 
 }
@@ -120,8 +119,8 @@ int main()
         auto const [window, renderer] = Sdl::create_window_and_renderer("Title"s, 500, 500);
         (void)window;
 
-        auto spr = Engine::Graphics::Sprite::load_from_file(renderer, "../res/sprites/run"s);
-        auto animation = spr.animation();
+        auto lightbulb_man_sprite = Engine::Graphics::Sprite::load_from_file(renderer, "../res/sprites/run"s);
+        auto animation = lightbulb_man_sprite.animation();
 
         Lightbulb_man lightbulb_man(0.0 + 150.0i);
 
@@ -130,7 +129,7 @@ int main()
         {
                 Sdl::render_clear(renderer);
                 animation.frame_advance();
-                spr.render(renderer, position);
+                draw_lightbulb_man(renderer, lightbulb_man, lightbulb_man_sprite);
                 Sdl::render_present(renderer);
         };
 
