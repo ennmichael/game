@@ -4,11 +4,9 @@
 #include <exception>
 #include <cassert>
 
-
-
-#include <iostream> // TODO Remove this
-
-
+// TODO IMPORTANT We can improve the Key Handling by using events properly
+// and using the events' `.repeat` member.
+// There is no difference between getting events and SDL_GetKeyboardState.
 
 namespace Engine::Gameplay {
 

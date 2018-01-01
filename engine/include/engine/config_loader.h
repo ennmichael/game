@@ -51,6 +51,12 @@ public:
                 }
         }
 
+        template <class T>
+        T unpack_value(std::string const& name, T& output) const
+        {
+                output = value<T>(name);
+        }
+
 private:
         std::unordered_map<std::string, std::string> values_;
 };
