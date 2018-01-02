@@ -83,11 +83,11 @@ public:
                 signals.keyboard_change.connect(
                         [this](Engine::Gameplay::Keyboard const& keyboard)
                         {
-                                if (keyboard.key_down(Sdl::Keycodes::a) || 
-                                    keyboard.key_down(Sdl::Keycodes::left)) {
+                                if (keyboard.key_down(Engine::Sdl::Keycodes::a) || 
+                                    keyboard.key_down(Engine::Sdl::Keycodes::left)) {
                                         move_left();
-                                } else if (keyboard.key_down(Sdl::Keycodes::d) ||
-                                           keyboard.key_down(Sdl::Keycodes::right)) {
+                                } else if (keyboard.key_down(Engine::Sdl::Keycodes::d) ||
+                                           keyboard.key_down(Engine::Sdl::Keycodes::right)) {
                                         move_right();
                                 } else {
                                         stand_still();
@@ -104,7 +104,7 @@ private:
 
 class Lightbulb_man_graphics {
 public:
-        explicit Lightbulb_man_graphics(Sdl::Renderer const& renderer)
+        explicit Lightbulb_man_graphics(Engine::Sdl::Renderer const& renderer)
                 : idle_sprite_(Engine::Graphics::Sprite::load_from_file(renderer,
                                                                         "../res/sprites/idle"s))
                 , running_sprite_(Engine::Graphics::Sprite::load_from_file(renderer,
@@ -118,7 +118,7 @@ public:
                 running_animation_.frame_advance();
         }
 
-        void render(Sdl::Renderer& renderer, Lightbulb_man const& lightbulb_man)
+        void render(Engine::Sdl::Renderer& renderer, Lightbulb_man const& lightbulb_man)
         {
                 auto& sprite = present_sprite(lightbulb_man);
                 auto const flip = present_flip(lightbulb_man);
@@ -133,11 +133,11 @@ private:
                 return running_sprite_;
         }
 
-        Sdl::Flip present_flip(Lightbulb_man const& lightbulb_man)
+        Engine::Sdl::Flip present_flip(Lightbulb_man const& lightbulb_man)
         {
                 if (lightbulb_man.facing_left())
-                        return Sdl::Flip::horizontal;
-                return Sdl::Flip::none;
+                        return Engine::Sdl::Flip::horizontal;
+                return Engine::Sdl::Flip::none;
         }
 
         Engine::Graphics::Sprite idle_sprite_;
@@ -149,15 +149,15 @@ private:
 
 }
 
-// TODO Engine::Graphics::Sdl
+// TODO Engine::Graphics::Engine::Sdl
 
 int main()
 {
-        Sdl::Manager manager;
+        Engine::Sdl::Manager manager;
         (void)manager;
 
         // Due to working with `unique_ptr` it turns out I have const correctness issues
-        auto [window, renderer] = Sdl::create_window_and_renderer("Title"s, 500, 500);
+        auto [window, renderer] = Engine::Sdl::create_window_and_renderer("Title"s, 500, 500);
         (void)window;
 
         // Clearly shouldn't be in `Game::Logic`
@@ -173,10 +173,10 @@ int main()
         {
                 lightbulb_man.update_position();
 
-                Sdl::render_clear(renderer);
+                Engine::Sdl::render_clear(renderer);
                 lightbulb_man_graphics.frame_advance();
                 lightbulb_man_graphics.render(renderer, lightbulb_man);
-                Sdl::render_present(renderer);
+                Engine::Sdl::render_present(renderer);
         };
 
         signals.frame_advance.connect(on_frame_advance);

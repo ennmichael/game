@@ -1,7 +1,7 @@
 #pragma once
 
 #include "boost/signals2.hpp"
-#include "sdl++/sdl++.h"
+#include "sdl++.h"
 #include "keyboard.h"
 #include <functional>
 #include <unordered_map>

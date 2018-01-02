@@ -2,7 +2,7 @@
 #include "SDL_image.h"
 #include <type_traits>
 
-namespace Sdl {
+namespace Engine::Sdl {
 
 void Window_deleter::operator()(SDL_Window* window) const noexcept
 {

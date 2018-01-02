@@ -6,9 +6,97 @@ using namespace std::string_literals;
 
 namespace Engine::Graphics {
 
-Sprite Sprite::load_from_file(Sdl::Renderer const& renderer, 
-                              std::string const& path)
+Frame::Frame(Sdl::Rect source_rect, Sdl::Texture& texture) noexcept
+        : source_rect_(source_rect)
+        , texture_(&texture)
+{}
+
+void Frame::render(Sdl::Renderer& renderer,
+                   Complex_number position,
+                   double angle,
+                   Sdl::Flip flip)
 {
+        Sdl::Rect const destination_rect = {
+                source_rect_.w,
+                source_rect_.h,
+                static_cast<int>(position.real()),
+                static_cast<int>(position.imag())
+        };
+
+        Sdl::render_copy(renderer,
+                         *texture_,
+                         source_rect_,
+                         destination_rect,
+                         angle,
+                         flip);
+}
+
+Sprite create_sprite(Sdl::Texture& texture, int frame_count)
+{
+        auto const sprite_dimensions =
+        [](Sdl::Texture& texture, int frame_count)
+        {
+                auto const [width, height] = Sdl::texture_dimensions(texture);
+                return Sdl::Dimensions {
+                        width / frame_count,
+                        height
+                };
+        };
+
+        auto const [width, height] = sprite_dimensions(texture, frame_count);
+        Sprite sprite;
+
+        for (auto i = 0; i < frame_count; ++i) {
+                Sdl::Rect const src {
+                        width * i, 0,
+                        width, height
+                };
+
+                sprite.push(Frame(
+                        src,
+                        texture
+                ));
+        }
+
+        return sprite;
+}
+
+Animation::Animation(Sprite const& sprite, int frame_delay) noexcept
+        : sprite_(&sprite)
+        , remaining_frame_delay_(frame_delay)
+        , max_frame_delay_(frame_delay)
+{}
+
+void Animation::advance() noexcept
+{
+        --remaining_frame_delay_;
+        if (remaining_frame_delay_ == 0) {
+                remaining_frame_delay_ = max_frame_delay_;
+                advance_sprite_frame();
+        }
+}
+
+void Animation::render(Sdl::Renderer& renderer,
+                       Complex_number position,
+                       double angle=0,
+                       Sdl::Flip flip)
+{
+        current_frame_->render(renderer, position, angle, flip);
+}
+
+void Animation::advance_frame() noexcept
+{
+        ++current_frame_;
+        if (current_frame_ == sprite_->cend())
+                current_frame_ = sprite_->cbegin();
+}
+
+AnimatedSprite AnimatedSprite::load(std::string const& base_path
+                                    std::string const& image_extension,
+                                    std::string const& config_extension)
+{
+        using namespace std::string_literals;
+
         auto const sprite_properties =
         [](Config const& config)
         {
@@ -18,87 +106,24 @@ Sprite Sprite::load_from_file(Sdl::Renderer const& renderer,
                 );
         };
 
-        auto const image_path = path + ".png"s;
-        auto const config_path = path + ".sheet.config"s;
+        auto const frames =
+        [](Sdl::Texture& texture, int frame_count)
+        {
+                
+        };
 
-        auto const sprite_config = Config::load_from_file(config_path);
+        auto const image_path = base_path + "."s + image_extension;
+        auto const config_path = path + "."s + config_extension;
+
+        // TODO Rename these in Sdl and Config
+
+        auto const sprite_config = Config::load(config_path);
         auto const [frame_count, frame_delay] = sprite_properties(sprite_config);
-        auto texture = Sdl::load_texture_from_file(renderer, image_path);
+        auto texture = Sdl::load_texture(renderer, image_path);
 
         return Sprite(std::move(texture),
                       frame_count,
                       frame_delay);
-}
-
-Sprite::Sprite(Sdl::Texture texture, int frame_count, int frame_delay) noexcept
-        : texture_(std::move(texture))
-        , frame_count_(frame_count)
-        , frame_delay_(frame_delay)
-{
-        auto const [texture_width, texture_height] = Sdl::texture_dimensions(texture_);
-        frame_width_ = texture_width / frame_count_;
-        frame_height_ = texture_height;
-}
-
-void Sprite::frame_advance() noexcept
-{
-        ++current_frame_;
-        if (current_frame_ == frame_count_)
-                current_frame_ = 0;
-}
-
-int Sprite::frame_delay() const noexcept
-{
-        return frame_delay_;
-}
-
-Animation Sprite::animation() noexcept
-{
-        return Animation(*this);
-}
-
-void Sprite::render(Sdl::Renderer const& renderer, 
-                    Engine::Complex_number position,
-                    double angle,
-                    Sdl::Flip flip) noexcept
-{
-        auto const src = source_rect();
-        auto const dst = destination_rect(position);
-        Sdl::render_copy(renderer, texture_, src, dst, angle, flip);
-}
-
-Sdl::Rect Sprite::source_rect() const noexcept
-{
-        return {
-                current_frame_ * frame_width_,
-                0,
-                frame_width_,
-                frame_height_
-        };
-}
-
-Sdl::Rect Sprite::destination_rect(Engine::Complex_number position) const noexcept
-{
-        return {
-                static_cast<int>(position.real()),
-                static_cast<int>(position.imag()),
-                frame_width_,
-                frame_height_
-        };
-}
-
-Animation::Animation(Sprite& sprite) noexcept
-        : sprite_(&sprite)
-        , remaining_frame_delay_(sprite.frame_delay())
-{}
-
-void Animation::frame_advance() noexcept
-{
-        --remaining_frame_delay_;
-        if (remaining_frame_delay_ == 0) {
-                remaining_frame_delay_ = sprite_->frame_delay();
-                sprite_->frame_advance();
-        }
 }
 
 }

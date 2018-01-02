@@ -11,7 +11,7 @@
 
 // TODO Don't take `unique_ptr`s in interfaces
 
-namespace Sdl {
+namespace Engine::Sdl {
 
 using Keycode = SDL_Keycode;
 

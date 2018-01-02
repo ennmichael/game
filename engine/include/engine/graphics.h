@@ -1,50 +1,59 @@
 #pragma once
 
 #include <string>
-#include "sdl++/sdl++.h"
+#include "sdl++.h"
 #include "base.h"
 
 namespace Engine::Graphics {
 
-class Animation;
+using Frame = Sdl::Rect;
 
-class Sprite {
+class Frame {
 public:
-        static Sprite load_from_file(Sdl::Renderer const& renderer,
-                                     std::string const& base_path);
+        Frame(Sdl::Rect source_rect, Sdl::Texture& texture) noexcept;
 
-        Sprite(Sdl::Texture texture, int frame_count, int frame_delay) noexcept;
-        
-        void frame_advance() noexcept;
-        int frame_delay() const noexcept;
-        Animation animation() noexcept;
-
-        void render(Sdl::Renderer const& renderer,
-                    Engine::Complex_number position,
+        void render(Sdl::Renderer& renderer,
+                    Complex_number position,
                     double angle=0,
-                    Sdl::Flip flip=Sdl::Flip::none) noexcept; 
+                    Sdl::Flip flip=Sdl::Flip::none);
 
 private:
-        Sdl::Rect source_rect() const noexcept;
-        Sdl::Rect destination_rect(Engine::Complex_number position) const noexcept;
-
-        Sdl::Texture texture_;
-        int frame_count_;
-        int frame_delay_;
-        int current_frame_ = 0;
-        int frame_width_;
-        int frame_height_;
+        Sdl::Texture* texture_;
+        Sdl::Rect source_rect_;
 };
+
+using Sprite = std::vector<Frame>;
+
+Sprite create_sprite(Sdl::Texture& texture, int frame_count);
 
 class Animation {
 public:
-        explicit Animation(Sprite& sprite) noexcept;
+        Animation(Sprite const& sprite, int frame_delay) noexcept;
 
-        void frame_advance() noexcept;
+        void advance() noexcept;
+        void render(Sdl::Renderer& renderer,
+                    Complex_number position,
+                    double angle=0,
+                    Sdl::Flip flip=Sdl::Flip::none);
 
 private:
-        Sprite* sprite_;
+        void advance_frame() noexcept;
+
+        Sprite const* sprite_;
+        Sprite::const_iterator current_frame_ = sprite_.cbegin();
         int remaining_frame_delay_;
+        int max_frame_delay_;
+};
+
+std::pair<Sprite, Animation> load_graphics();
+
+struct AnimatedSprite {
+        static AnimatedSprite load(std::string const& base_path,
+                                   std::string const& image_extension="png",
+                                   std::string const& config_extension="sheet.config");
+
+        Sprite sprite;
+        Animation animation;
 };
 
 }

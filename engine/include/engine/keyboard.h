@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sdl++/sdl++.h"
+#include "sdl++.h"
 #include <unordered_map>
 
 namespace Engine::Gameplay {
