@@ -4,10 +4,6 @@
 #include <exception>
 #include <cassert>
 
-// TODO IMPORTANT We can improve the Key Handling by using events properly
-// and using the events' `.repeat` member.
-// There is no difference between getting events and SDL_GetKeyboardState.
-
 namespace Engine::Gameplay {
 
 namespace {
@@ -39,63 +35,6 @@ private:
 
 void main_loop(Signals const& signals, int fps)
 {
-        using Keyboard = std::unordered_map<Sdl::Scancode, Key_state>;
-
-        auto const update_keyboard =
-        [](Keyboard& keyboard, Signals const& signals)
-        {
-                auto const update_key =
-                [](Keyboard& keyboard, Sdl::Scancode scancode)
-                {
-                        auto const advance_key =
-                        [](Keyboard& keyboard,
-                           Sdl::Scancode scancode,
-                           Key_state immediate_state,
-                           Key_state longterm_state)
-                        {
-                                try {
-                                        auto& state = keyboard.at(scancode);
-                                        if (state == immediate_state)
-                                                state = longterm_state;
-                                        else if (state != longterm_state)
-                                                state = immediate_state;
-                                } catch (std::out_of_range const&) {
-                                        keyboard[scancode] = immediate_state;
-                                }
-                        };
-
-                        auto const down =
-                        [&advance_key](Keyboard& keyboard, Sdl::Scancode scancode)
-                        {
-                                advance_key(keyboard,
-                                            scancode,
-                                            Key_state::Pressed,
-                                            Key_state::Down);
-                        };
-
-                        auto const up =
-                        [&advance_key](Keyboard& keyboard, Sdl::Scancode scancode)
-                        {
-                                advance_key(keyboard,
-                                            scancode,
-                                            Key_state::Released,
-                                            Key_state::Up);
-                        };
-
-                        auto const key_is_down = SDL_GetKeyboardState(nullptr)[scancode];
-
-                        if (key_is_down)
-                                down(keyboard, scancode);
-                        else
-                                up(keyboard, scancode);
-                };
-
-                for (auto const& [scancode, key_states] : signals.keyboard) {
-                        (void)key_states;
-                        update_key(keyboard, scancode);
-                }
-        };
-
         auto const calculate_frame_delay =
         [](int fps) noexcept
         {
@@ -104,27 +43,20 @@ void main_loop(Signals const& signals, int fps)
         };
 
         auto const dispatch_event =
-        [](Sdl::Event const& event, Signals const& signals)
+        [](Sdl::Event const& event, Keyboard& keyboard, Signals const& signals)
         {
+                keyboard.update(event);
+
                 if (event.type == SDL_QUIT) {
                         signals.quit();
                         return true;
                 }
+                else if (is_keyboard_event(event)) {
+                        signals.keyboard_change(keyboard);
+                }
 
                 return false;
         };
-
-        auto const dispatch_keyboard =
-        [](Keyboard const& keyboard, Signals const& signals)
-        {
-                for (auto const& [scancode, key_state] : keyboard) {
-                        try {
-                                signals.keyboard.at(scancode).at(key_state)();
-                        } catch (std::out_of_range const&){
-                        }
-                }
-        };
-        
 
         auto const frame_delay = calculate_frame_delay(fps);
         Timer timer(frame_delay);
@@ -132,15 +64,8 @@ void main_loop(Signals const& signals, int fps)
 
         auto quit = false;
         while (!quit) {
-                while (auto const event = Sdl::poll_event()) {
-                        // TODO We're handling quitting incorrectly
-                        // There should be a `main_loop` or `game` object and `.quit`
-                        
-                        update_keyboard(keyboard, signals);
-                        dispatch_keyboard(keyboard, signals);
-
-                        quit = dispatch_event(*event, signals);
-                }
+                while (auto const event = Sdl::poll_event())
+                        quit = dispatch_event(*event, keyboard, signals);
 
                 if (timer.ready())
                         signals.frame_advance();

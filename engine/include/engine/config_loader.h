@@ -52,7 +52,7 @@ public:
         }
 
         template <class T>
-        T unpack_value(std::string const& name, T& output) const
+        void unpack_value(std::string const& name, T& output) const
         {
                 output = value<T>(name);
         }

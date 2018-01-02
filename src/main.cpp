@@ -15,11 +15,11 @@ using namespace std::complex_literals;
 
 namespace Game::Logic {
 
-enum class Direction {
+enum class Faced_direction {
         left, right
 };
 
-struct Object_position {
+struct Entity_position {
         void update()
         {
                 coordinates += velocity;
@@ -30,7 +30,7 @@ struct Object_position {
 };
 
 class Lightbulb_man {
-public: // TODO This will probably also take an Engine::Graphics::Dimensions parameter for the checkbox
+public:
         explicit Lightbulb_man(Engine::Complex_number coordinates)
                 : position_{coordinates}
         {
@@ -40,24 +40,37 @@ public: // TODO This will probably also take an Engine::Graphics::Dimensions par
 
         void move_left() noexcept
         {
-                direction_ = Direction::left;
-                position_.velocity_ = -speed_;
+                direction_ = -speed_;
         }
 
         void move_right() noexcept
         {
-                direction_ = Direction::right;
-                position_.velocity_ = speed_;
+                direction_ = speed_;
         }
 
-        void stay_still() noexcept
+        void stand_still() noexcept
         {
-                position_.velocity = 0.0 + 0.0i;
+                direction_ = 0.0;
         }
 
         void update_position() noexcept
         {
-                position_.update();
+                position_ += direction_;
+        }
+
+        bool standing_still() const noexcept
+        {
+                return direction_.real() == 0;
+        }
+
+        bool facing_right() const noexcept
+        {
+                return direction_.real() > 0;
+        }
+
+        bool facing_left() const noexcept
+        {
+                return direction_.real() < 0;
         }
 
         Engine::Complex_number position() const noexcept
@@ -65,79 +78,108 @@ public: // TODO This will probably also take an Engine::Graphics::Dimensions par
                 return position_;
         }
 
-        Direction direction() const noexcept
+        void register_keyboard_controls(Engine::Gameplay::Signals& signals)
         {
-                return direction_;
-        }
-
-        void register_movement(Engine::Gameplay::Signals& signals)
-        {
-                auto const move_left_cb =
-                [this]
-                {
-                        move_left();
-                };
-
-                auto const move_right_cb =
-                [this]
-                {
-                        move_right();
-                };
-
-                signals.a_pressed(move_left_cb);
-                signals.left_pressed(move_left_cb);
-
-                signals.d_pressed(move_right_cb);
-                signals.right_pressed(move_right_cb);
+                signals.keyboard_change.connect(
+                        [this](Engine::Gameplay::Keyboard const& keyboard)
+                        {
+                                if (keyboard.key_down(Sdl::Keycodes::a) || 
+                                    keyboard.key_down(Sdl::Keycodes::left)) {
+                                        move_left();
+                                } else if (keyboard.key_down(Sdl::Keycodes::d) ||
+                                           keyboard.key_down(Sdl::Keycodes::right)) {
+                                        move_right();
+                                } else {
+                                        stand_still();
+                                }
+                        }
+                );
         }
 
 private:
-        Object_position position;
+        Engine::Complex_number position_;
+        Engine::Complex_number direction_ = 0.0 + 0.0i;
         double speed_ = 0;
-        Direction direction_ = Direction::left;
 };
 
-// TODO Fix namespacing to Engine::Sdl
+class Lightbulb_man_graphics {
+public:
+        explicit Lightbulb_man_graphics(Sdl::Renderer const& renderer)
+                : idle_sprite_(Engine::Graphics::Sprite::load_from_file(renderer,
+                                                                        "../res/sprites/idle"s))
+                , running_sprite_(Engine::Graphics::Sprite::load_from_file(renderer,
+                                                                           "../res/sprites/run"s))
+        {
+        }
 
-void draw_player(Sdl::Renderer const& renderer, 
-                 Lightbulb_man const& lightbulb_man,
-                 Engine::Sprite const& lightbulb_man_spriteite)
-{
-        auto const flip = (lightbulb_man.direction() == Direction::left) ?
-                Sdl::Flip::horizontal : Sdl::Flip::none
+        void frame_advance()
+        {
+                idle_animation_.frame_advance();
+                running_animation_.frame_advance();
+        }
 
-        lightbulb_man_spriteite.render(renderer, lightbulb_man.position(), 0, flip);
+        void render(Sdl::Renderer& renderer, Lightbulb_man const& lightbulb_man)
+        {
+                auto& sprite = present_sprite(lightbulb_man);
+                auto const flip = present_flip(lightbulb_man);
+                sprite.render(renderer, lightbulb_man.position(), 0, flip);
+        }
+
+private:
+        Engine::Graphics::Sprite& present_sprite(Lightbulb_man const& lightbulb_man) noexcept
+        {
+                if (lightbulb_man.standing_still())
+                        return idle_sprite_;
+                return running_sprite_;
+        }
+
+        Sdl::Flip present_flip(Lightbulb_man const& lightbulb_man)
+        {
+                if (lightbulb_man.facing_left())
+                        return Sdl::Flip::horizontal;
+                return Sdl::Flip::none;
+        }
+
+        Engine::Graphics::Sprite idle_sprite_;
+        Engine::Graphics::Animation idle_animation_ = idle_sprite_.animation();
+
+        Engine::Graphics::Sprite running_sprite_;
+        Engine::Graphics::Animation running_animation_ = running_sprite_.animation();
+};
+
 }
 
-}
+// TODO Engine::Graphics::Sdl
 
 int main()
 {
         Sdl::Manager manager;
         (void)manager;
 
-        auto const [window, renderer] = Sdl::create_window_and_renderer("Title"s, 500, 500);
+        // Due to working with `unique_ptr` it turns out I have const correctness issues
+        auto [window, renderer] = Sdl::create_window_and_renderer("Title"s, 500, 500);
         (void)window;
 
-        auto lightbulb_man_sprite = Engine::Graphics::Sprite::load_from_file(renderer, "../res/sprites/run"s);
-        auto animation = lightbulb_man_sprite.animation();
+        // Clearly shouldn't be in `Game::Logic`
+        Game::Logic::Lightbulb_man_graphics lightbulb_man_graphics(renderer);
 
-        Lightbulb_man lightbulb_man(0.0 + 150.0i);
+        Game::Logic::Lightbulb_man lightbulb_man(0.0 + 150.0i);
+        Engine::Gameplay::Signals signals;
+
+        lightbulb_man.register_keyboard_controls(signals);
 
         auto const on_frame_advance =
-        [&]()
+        [&]
         {
+                lightbulb_man.update_position();
+
                 Sdl::render_clear(renderer);
-                animation.frame_advance();
-                draw_lightbulb_man(renderer, lightbulb_man, lightbulb_man_sprite);
+                lightbulb_man_graphics.frame_advance();
+                lightbulb_man_graphics.render(renderer, lightbulb_man);
                 Sdl::render_present(renderer);
         };
 
-        Engine::Gameplay::Signals signals;
-
-
         signals.frame_advance.connect(on_frame_advance);
-
         Engine::Gameplay::main_loop(signals, 60);
 }
 

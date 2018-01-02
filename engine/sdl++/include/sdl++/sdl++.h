@@ -13,6 +13,17 @@
 
 namespace Sdl {
 
+using Keycode = SDL_Keycode;
+
+namespace Keycodes {
+        auto constexpr a = SDLK_a;
+        auto constexpr d = SDLK_d;
+        auto constexpr w = SDLK_w;
+        auto constexpr space = SDLK_SPACE;
+        auto constexpr left = SDLK_LEFT;
+        auto constexpr right = SDLK_RIGHT;
+};
+
 class Window_deleter {
 public:
         void operator()(SDL_Window* window) const noexcept;
@@ -31,7 +42,6 @@ public:
 using Rect  = SDL_Rect;
 using Color = SDL_Color;
 using Event = SDL_Event;
-using Scancode = SDL_Scancode;
 using Optional_event = std::optional<Event>;
 
 namespace Colors {
