@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.1.0)
 
 project(game)
-add_executable(game src/main.cpp src/mike.cpp src/mike_animations.cpp)
+add_executable(game src/main.cpp src/mike.cpp src/mike_sprites.cpp)
 
 target_include_directories(game PRIVATE "${game_SOURCE_DIR}/include/game")
 

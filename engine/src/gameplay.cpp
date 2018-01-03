@@ -51,9 +51,6 @@ void main_loop(Signals const& signals, int fps)
                         signals.quit();
                         return true;
                 }
-                else if (is_keyboard_event(event)) {
-                        signals.keyboard_change(keyboard);
-                }
 
                 return false;
         };
@@ -67,8 +64,9 @@ void main_loop(Signals const& signals, int fps)
                 while (auto const event = Sdl::poll_event())
                         quit = dispatch_event(*event, keyboard, signals);
 
-                if (timer.ready())
-                        signals.frame_advance();
+                if (timer.ready()) {
+                        signals.frame_advance(keyboard);
+                }
         }
 }
 

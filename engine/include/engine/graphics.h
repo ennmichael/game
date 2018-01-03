@@ -8,7 +8,7 @@ namespace Engine::Graphics {
 
 struct Sprite {
 public:
-        Sprite(Sdl::Texture& texture, int frame_count);
+        Sprite(Sdl::Texture texture, int frame_count);
 
         void render_frame(Sdl::Renderer& renderer,
                           Complex_number position,
@@ -16,45 +16,49 @@ public:
                           double angle=0,
                           Sdl::Flip flip=Sdl::Flip::none);
 
-        int frame_count() const noexcept; 
-
 private:
         Sdl::Rect source_rect(int frame_num) const noexcept;
         Sdl::Rect destination_rect(Complex_number position) const noexcept;
 
-        Sdl::Texture* texture_;
-        int frame_count_;
-        int frame_width_ = Sdl::texture_width(*texture_) / frame_count_;
-        int frame_height_ = Sdl::texture_height(*texture_);
+        Sdl::Texture texture_;
+        int frame_width_;
+        int frame_height_;
 };
 
 class Animation {
 public:
-        Animation(Sprite& sprite, int frame_delay) noexcept;
+        Animation(int frame_count, int frame_delay) noexcept;
 
-        void advance() noexcept;
+        void update() noexcept;
+        int current_frame() const noexcept;
+
+private:
+        void update_current_frame() noexcept;
+
+        int remaining_frame_delay_;
+        int max_frame_delay_;
+        int frame_count_;
+        int current_frame_ = 0;
+};
+
+struct Animated_sprite {
+public:
+        static Animated_sprite load(Sdl::Renderer& renderer,
+                                    std::string const& base_path,
+                                    std::string const& image_extension="png",
+                                    std::string const& config_extension="sheet.config");
+
+        Animated_sprite(Sprite sprite, Animation const& animation) noexcept;
+
+        void update();
         void render(Sdl::Renderer& renderer,
                     Complex_number position,
                     double angle=0,
                     Sdl::Flip flip=Sdl::Flip::none);
 
 private:
-        void advance_frame_num() noexcept;
-
-        Sprite* sprite_;
-        int remaining_frame_delay_;
-        int max_frame_delay_;
-        int frame_num_ = 0;
-};
-
-struct Animated_sprite {
-        static Animated_sprite load(Sdl::Renderer& renderer,
-                                    std::string const& base_path,
-                                    std::string const& image_extension="png",
-                                    std::string const& config_extension="sheet.config");
-
-        Sprite sprite;
-        Animation animation;
+        Sprite sprite_;
+        Animation animation_;
 };
 
 }

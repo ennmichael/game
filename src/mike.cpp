@@ -8,8 +8,6 @@ namespace Game::Logic {
 Mike::Mike(Engine::Complex_number position) noexcept
         : position_(position)
 {
-        // Also load the position via the config file
-
         auto const config = Engine::Config::load("../res/mike.config"s);
         config.unpack_value("speed"s, speed_);
 }
@@ -48,20 +46,36 @@ void Mike::run_left() noexcept
 {
         direction_ = Direction::left;
         state_ = State::running;
-        position_ -= speed_;
 }
 
 void Mike::run_right() noexcept
 {
         direction_ = Direction::right;
         state_ = State::running;
-        position_ += speed_;
 }
 
 void Mike::stand_still() noexcept
 {
         direction_ = Direction::none;
         state_ = State::standing_still;
+}
+
+void Mike::update_position() noexcept
+{
+        auto const move_forward =
+        [this](double speed)
+        {
+                if (is_facing_left())
+                        position_ -= speed_;
+                else if (is_facing_right())
+                        position_ += speed_;
+        }
+
+        if (is_running()) {
+                move_forward(speed_);
+        } else if (is_jumping) {
+                move_forward(speed_*2);
+        }
 }
 
 Direction Mike::direction() const noexcept
@@ -81,7 +95,7 @@ Engine::Complex_number Mike::position() const noexcept
 
 void register_mike_keyboard_controls(Mike& mike, Engine::Gameplay::Signals& signals)
 {
-        signals.keyboard_change.connect(
+        signals.frame_advance.connect(
                 [&mike](Engine::Gameplay::Keyboard const& keyboard)
                 {
                         if (!user_has_control(mike))

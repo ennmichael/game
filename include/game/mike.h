@@ -32,7 +32,9 @@ public:
         void run_left() noexcept;
         void run_right() noexcept;
         void stand_still() noexcept;
-       
+      
+        void update_position() noexcept;
+
         Direction direction() const noexcept;
         State state() const noexcept;
         Engine::Complex_number position() const noexcept;

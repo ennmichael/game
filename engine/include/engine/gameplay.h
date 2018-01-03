@@ -12,8 +12,7 @@ namespace Engine::Gameplay {
 class Main_loop;
 
 struct Signals {
-        boost::signals2::signal<void(Keyboard const&)> keyboard_change;
-        boost::signals2::signal<void()> frame_advance;
+        boost::signals2::signal<void(Keyboard const&)> frame_advance;
         boost::signals2::signal<void()> quit;
 };
 
