@@ -81,17 +81,31 @@ void render_copy(Renderer const& renderer,
                         static_cast<SDL_RendererFlip>(flip));
 }
 
-Texture load_texture_from_file(Renderer const& renderer, std::string const& path)
+Texture load_texture(Renderer const& renderer, std::string const& path)
 {
         return Texture(IMG_LoadTexture(renderer.get(), path.c_str()));
 }
 
 Dimensions texture_dimensions(Texture const& texture)
 {
+        return {
+                texture_width(texture),
+                texture_height(texture)
+        };
+}
+
+int texture_width(Texture const& texture)
+{
         int width;
+        SDL_QueryTexture(texture.get(), nullptr, nullptr, &width, nullptr);
+        return width;
+}
+
+int texture_height(Texture const& texture)
+{
         int height;
-        SDL_QueryTexture(texture.get(), nullptr, nullptr, &width, &height);
-        return {width, height};
+        SDL_QueryTexture(texture.get(), nullptr, nullptr, nullptr, &height);
+        return height;
 }
 
 int get_ticks() noexcept

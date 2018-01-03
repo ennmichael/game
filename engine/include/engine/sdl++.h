@@ -94,7 +94,7 @@ void render_copy(Renderer const& renderer,
                  double angle=0,
                  Flip flip=Flip::none);
 
-Texture load_texture_from_file(Renderer const& renderer, std::string const& path);
+Texture load_texture(Renderer const& renderer, std::string const& path);
 
 struct Dimensions {
         int width;
@@ -102,6 +102,8 @@ struct Dimensions {
 };
 
 Dimensions texture_dimensions(Texture const& texture);
+int texture_width(Texture const& texture);
+int texture_height(Texture const& texture);
 
 int get_ticks() noexcept;
 
