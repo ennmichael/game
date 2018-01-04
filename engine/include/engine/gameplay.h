@@ -9,6 +9,9 @@
 #include <unordered_map>
 #include <utility>
 #include <functional>
+#include <variant>
+#include <optional>
+#include <type_traits>
 
 namespace Engine::Gameplay {
 
@@ -44,13 +47,17 @@ private:
 
 class Timed_callback {
 public:
-        using Function = std::function<void()>;
+        using Function = std::variant<std::function<void()>, std::function<Timed_callback()>>;
 
-        Timed_callback(Function function, Duration::Frames duration) noexcept;
+        template <class F>
+        Timed_callback(F f, Duration::Frames duration)
+                : function_(std::function<std::invoke_result_t<F>()>(f))
+                , timer_(duration)
+        {}
 
         bool ready() const noexcept;
         void update_timer() noexcept;
-        void execute();
+        std::optional<Timed_callback> execute();
 
 private:
         Function function_;

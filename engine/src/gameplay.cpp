@@ -55,11 +55,6 @@ Frame_timer Frame_timer::restarted() const noexcept
         return Frame_timer(duration_);
 }
 
-Timed_callback::Timed_callback(Function function, Duration::Frames duration) noexcept
-        : function_(function)
-        , timer_(duration)
-{}
-
 bool Timed_callback::ready() const noexcept
 {
         return timer_.ready();
@@ -70,9 +65,22 @@ void Timed_callback::update_timer() noexcept
         timer_.update();
 }
 
-void Timed_callback::execute()
+std::optional<Timed_callback> Timed_callback::execute()
 {
-        function_();
+        struct Visitor {
+                std::optional<Timed_callback> operator()(std::function<void()> f) const
+                {
+                        f();
+                        return std::nullopt;
+                }
+
+                std::optional<Timed_callback> operator()(std::function<Timed_callback()> f) const
+                {
+                        return f();
+                }
+        };
+
+        return std::visit(Visitor(), function_);
 }
 
 void update_callbacks_timers(Timed_callbacks& callbacks) noexcept
@@ -96,10 +104,16 @@ void execute_ready_callbacks(Timed_callbacks& callbacks)
                 return result;
         };
 
+        Timed_callbacks new_callbacks;
+
         for (auto const cb : ready_callbacks(callbacks)) {
-                cb->execute();
+                if (auto const new_callback = cb->execute())
+                        new_callbacks.push_back(*new_callback);
                 callbacks.erase(cb);
         }
+
+        std::copy(new_callbacks.cbegin(), new_callbacks.cend(), 
+                  std::back_inserter(callbacks));
 }
 
 void Main_loop::start(Signals const& signals, int fps)

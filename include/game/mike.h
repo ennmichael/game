@@ -15,6 +15,7 @@ public:
         enum class State {
                 standing_still,
                 running,
+                preparing_to_jump,
                 jumping,
                 climbing
         };
@@ -29,6 +30,7 @@ public:
 
         bool is_standing_still() const noexcept;
         bool is_running() const noexcept;
+        bool is_preparing_to_jump() const noexcept;
         bool is_jumping() const noexcept;
         bool is_climbing() const noexcept;
 

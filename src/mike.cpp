@@ -22,6 +22,11 @@ bool Mike::is_running() const noexcept
         return state_ == State::running;
 }
 
+bool Mike::is_preparing_to_jump() const noexcept
+{
+        return state_ == State::preparing_to_jump;
+}
+
 bool Mike::is_jumping() const noexcept
 {
         return state_ == State::jumping;
@@ -62,15 +67,17 @@ void Mike::stand_still() noexcept
 
 Engine::Gameplay::Timed_callback Mike::jump() noexcept
 {
-        state_ = State::jumping;
-
         auto const callback =
         [this]
         {
-                stand_still();
+                state_ = State::jumping;
+                return Engine::Gameplay::Timed_callback(
+                        [this] { stand_still(); },
+                        durations_.jump
+                );
         };
 
-        return Engine::Gameplay::Timed_callback(callback, durations_.jump);
+        return Engine::Gameplay::Timed_callback(callback, durations_.jump_preparation);
 }
 
 void Mike::update_position() noexcept

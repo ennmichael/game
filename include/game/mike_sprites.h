@@ -11,6 +11,7 @@ struct Mike_sprites {
 
         Engine::Graphics::Animated_sprite still;
         Engine::Graphics::Animated_sprite run;
+        Engine::Graphics::Animated_sprite jump_preparation;
         Engine::Graphics::Animated_sprite jump;
         Engine::Graphics::Animated_sprite jump_still;
         Engine::Graphics::Animated_sprite climb;
