@@ -14,8 +14,19 @@ Mike_sprites Mike_sprites::load(Engine::Sdl::Renderer& renderer)
                 Engine::Graphics::Animated_sprite::load(renderer, "../res/sprites/still"s),
                 Engine::Graphics::Animated_sprite::load(renderer, "../res/sprites/run"s),
                 Engine::Graphics::Animated_sprite::load(renderer, "../res/sprites/jump"s),
+                Engine::Graphics::Animated_sprite::load(renderer, "../res/sprites/jump_still"s),
                 Engine::Graphics::Animated_sprite::load(renderer, "../res/sprites/run"s) // TODO Should be "climb"s
         };
+}
+
+Logic::Mike::Actions_durations Mike_sprites::actions_duratons() const noexcept
+{
+        Logic::Mike::Actions_durations durations;
+
+        durations.jump_preparation = Engine::Duration::Frames {0};
+        durations.jump = jump.animation_duration();
+
+        return durations;
 }
 
 Mike_sprite::Mike_sprite(Mike_sprites sprites, Logic::Mike const& mike) noexcept
@@ -36,10 +47,18 @@ void Mike_sprite::update()
 
 Engine::Graphics::Animated_sprite& Mike_sprite::current_sprite() noexcept
 {
+        auto const jump_sprite =
+        [this]() noexcept -> Engine::Graphics::Animated_sprite&
+        {
+                if (mike_->is_facing_left() || mike_->is_facing_right())
+                        return sprites_.jump;
+                return sprites_.jump_still;
+        };
+
         switch (mike_->state()) {
                 case Logic::Mike::State::standing_still: return sprites_.still;
                 case Logic::Mike::State::running:        return sprites_.run;
-                case Logic::Mike::State::jumping:        return sprites_.jump;
+                case Logic::Mike::State::jumping:        return jump_sprite();
                 case Logic::Mike::State::climbing:       return sprites_.climb;
         }
 

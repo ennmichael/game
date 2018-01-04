@@ -1,6 +1,18 @@
 #include "graphics.h"
 #include "config_loader.h"
+#include "utils.h"
 #include <utility>
+
+
+
+
+
+
+
+
+
+
+#include <iostream> // TODO Remove this
 
 using namespace std::string_literals;
 
@@ -49,9 +61,8 @@ Sdl::Rect Sprite::destination_rect(Complex_number position) const noexcept
         };
 }
 
-Animation::Animation(int frame_count, int frame_delay) noexcept
-        : remaining_frame_delay_(frame_delay)
-        , max_frame_delay_(frame_delay)
+Animation::Animation(int frame_count, Duration::Frames frame_delay) noexcept
+        : max_frame_delay_(Utils::underlying_value(frame_delay))
         , frame_count_(frame_count)
 {}
 
@@ -69,11 +80,18 @@ int Animation::current_frame() const noexcept
         return current_frame_;
 }
 
+Duration::Frames Animation::duration() const noexcept
+{
+        return Duration::Frames {(max_frame_delay_+1) * frame_count_};
+}
+
 void Animation::update_current_frame() noexcept
 {
         ++current_frame_;
-        if (current_frame_ == frame_count_)
+        if (current_frame_ == frame_count_) {
+                std::cout << "Wrapped " << this << '\n';
                 current_frame_ = 0;
+        }
 }
 
 Animated_sprite::Animated_sprite(Sprite sprite, Animation const& animation) noexcept
@@ -99,8 +117,13 @@ Animated_sprite Animated_sprite::load(Sdl::Renderer& renderer,
 
         return Animated_sprite(
                 Sprite(Sdl::load_texture(renderer, image_path), frame_count),
-                Animation(frame_count, frame_delay)
+                Animation(frame_count, Duration::Frames {frame_delay})
         );
+}
+
+Duration::Frames Animated_sprite::animation_duration() const noexcept
+{
+        return animation_.duration();
 }
 
 void Animated_sprite::update()

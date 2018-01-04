@@ -19,9 +19,10 @@ namespace Keycodes {
         auto constexpr a = SDLK_a;
         auto constexpr d = SDLK_d;
         auto constexpr w = SDLK_w;
-        auto constexpr space = SDLK_SPACE;
         auto constexpr left = SDLK_LEFT;
         auto constexpr right = SDLK_RIGHT;
+        auto constexpr up = SDLK_UP;
+        auto constexpr space = SDLK_SPACE;
 };
 
 class Window_deleter {

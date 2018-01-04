@@ -6,10 +6,13 @@ namespace Game::Graphics {
 
 struct Mike_sprites {
         static Mike_sprites load(Engine::Sdl::Renderer& renderer);
+        
+        Logic::Mike::Actions_durations actions_duratons() const noexcept;
 
         Engine::Graphics::Animated_sprite still;
         Engine::Graphics::Animated_sprite run;
         Engine::Graphics::Animated_sprite jump;
+        Engine::Graphics::Animated_sprite jump_still;
         Engine::Graphics::Animated_sprite climb;
 };
 
@@ -19,7 +22,7 @@ public:
 
         void render(Engine::Sdl::Renderer& renderer);
         void update();
-        
+
 private:
         Engine::Graphics::Animated_sprite& current_sprite() noexcept;
         Engine::Sdl::Flip current_flip() const noexcept;

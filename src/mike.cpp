@@ -1,12 +1,12 @@
-#include "engine/engine.h"
 #include "mike.h"
 
 using namespace std::string_literals;
 
 namespace Game::Logic {
 
-Mike::Mike(Engine::Complex_number position) noexcept
+Mike::Mike(Engine::Complex_number position, Actions_durations const& durations) noexcept
         : position_(position)
+        , durations_(durations)
 {
         auto const config = Engine::Config::load("../res/mike.config"s);
         config.unpack_value("speed"s, speed_);
@@ -60,22 +60,34 @@ void Mike::stand_still() noexcept
         state_ = State::standing_still;
 }
 
+Engine::Gameplay::Timed_callback Mike::jump() noexcept
+{
+        state_ = State::jumping;
+
+        auto const callback =
+        [this]
+        {
+                stand_still();
+        };
+
+        return Engine::Gameplay::Timed_callback(callback, durations_.jump);
+}
+
 void Mike::update_position() noexcept
 {
         auto const move_forward =
         [this](double speed)
         {
                 if (is_facing_left())
-                        position_ -= speed_;
+                        position_ -= speed;
                 else if (is_facing_right())
-                        position_ += speed_;
-        }
+                        position_ += speed;
+        };
 
-        if (is_running()) {
+        if (is_running())
                 move_forward(speed_);
-        } else if (is_jumping) {
+        else if (is_jumping())
                 move_forward(speed_*2);
-        }
 }
 
 Direction Mike::direction() const noexcept
@@ -96,13 +108,19 @@ Engine::Complex_number Mike::position() const noexcept
 void register_mike_keyboard_controls(Mike& mike, Engine::Gameplay::Signals& signals)
 {
         signals.frame_advance.connect(
-                [&mike](Engine::Gameplay::Keyboard const& keyboard)
+                [&mike](Engine::Gameplay::Main_loop& main_loop,
+                        Engine::Gameplay::Keyboard const& keyboard)
                 {
                         if (!user_has_control(mike))
                                 return;
 
-                        if (keyboard.key_down(Engine::Sdl::Keycodes::a) || 
-                            keyboard.key_down(Engine::Sdl::Keycodes::left)) {
+                        if (keyboard.key_down(Engine::Sdl::Keycodes::w) ||
+                            keyboard.key_down(Engine::Sdl::Keycodes::up) ||
+                            keyboard.key_down(Engine::Sdl::Keycodes::space)) {
+                                auto const callback = mike.jump();
+                                main_loop.register_callback(callback);
+                        } else if (keyboard.key_down(Engine::Sdl::Keycodes::a) ||
+                                   keyboard.key_down(Engine::Sdl::Keycodes::left)) {
                                 mike.run_left();
                         } else if (keyboard.key_down(Engine::Sdl::Keycodes::d) ||
                                    keyboard.key_down(Engine::Sdl::Keycodes::right)) {

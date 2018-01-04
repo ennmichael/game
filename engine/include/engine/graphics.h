@@ -27,16 +27,18 @@ private:
 
 class Animation {
 public:
-        Animation(int frame_count, int frame_delay) noexcept;
+        Animation(int frame_count, Duration::Frames frame_delay) noexcept;
 
         void update() noexcept;
         int current_frame() const noexcept;
 
+        Duration::Frames duration() const noexcept;
+
 private:
         void update_current_frame() noexcept;
 
-        int remaining_frame_delay_;
         int max_frame_delay_;
+        int remaining_frame_delay_ = max_frame_delay_;
         int frame_count_;
         int current_frame_ = 0;
 };
@@ -49,6 +51,8 @@ public:
                                     std::string const& config_extension="sheet.config");
 
         Animated_sprite(Sprite sprite, Animation const& animation) noexcept;
+
+        Duration::Frames animation_duration() const noexcept;
 
         void update();
         void render(Sdl::Renderer& renderer,
