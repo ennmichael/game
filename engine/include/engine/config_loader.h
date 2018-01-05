@@ -26,8 +26,6 @@ T convert_string(std::string str)
 
 } // Close unnamed namespace
 
-// TODO These should carry more information at production
-
 class Bad_config_syntax : public std::runtime_error {
         using std::runtime_error::runtime_error;
 };

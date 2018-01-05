@@ -43,7 +43,7 @@ Manager::~Manager()
 }
 
 WindowAndRenderer create_window_and_renderer(
-        std::string const& title, 
+        std::string title, 
         int width, 
         int height,
         Color background_color)
@@ -121,7 +121,7 @@ void render_copy(Renderer& renderer,
         render_copy(renderer, texture, src, dst, angle, flip);
 }
 
-Unique_texture load_texture(Renderer& renderer, std::string const& path)
+Unique_texture load_texture(Renderer& renderer, std::string path)
 {
         auto* texture = IMG_LoadTexture(&renderer, path.c_str());
 

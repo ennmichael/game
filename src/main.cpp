@@ -11,9 +11,6 @@
 
 
 
-// TODO Try using std::string_view in interfaces
-// TODO base.h should be utils.h
-
 using namespace std::string_literals;
 using namespace std::complex_literals;
 

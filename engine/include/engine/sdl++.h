@@ -77,7 +77,7 @@ public:
 
 using WindowAndRenderer = std::pair<Unique_window, Unique_renderer>;
 
-WindowAndRenderer create_window_and_renderer(std::string const& title,
+WindowAndRenderer create_window_and_renderer(std::string title,
                                              int width,
                                              int height,
                                              Color background_color=Colors::white);
@@ -104,7 +104,7 @@ void render_copy(Renderer& renderer,
                  double angle=0,
                  Flip flip=Flip::none);
 
-Unique_texture load_texture(Renderer& renderer, std::string const& path);
+Unique_texture load_texture(Renderer& renderer, std::string path);
 
 struct Dimensions {
         int width;
