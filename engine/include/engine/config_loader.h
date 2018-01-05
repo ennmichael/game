@@ -14,6 +14,8 @@ class Conversion_failed : public std::exception {};
 template <class T>
 T convert_string(std::string str)
 {
+        // TODO Converting a double to an int passes without an exception, which is bad
+
         T result;
         std::stringstream stream(str);
         stream >> result;
@@ -27,23 +29,26 @@ T convert_string(std::string str)
 } // Close unnamed namespace
 
 class Bad_config_syntax : public std::runtime_error {
-        using std::runtime_error::runtime_error;
+public:
+        Bad_config_syntax(std::string const& path, std::string const& line);
 };
 
 class Bad_config_value : public std::runtime_error {
-        using std::runtime_error::runtime_error;
+public:
+        Bad_config_value(std::string const& path, std::string const& name);
 };
 
 class Nonexistent_config_value : public std::runtime_error {
-        using std::runtime_error::runtime_error;
+public:
+        Nonexistent_config_value(std::string const& path, std::string const& name);
 };
-
 
 class Nonexistent_config_file : public std::runtime_error {
-        using std::runtime_error::runtime_error;
+public:
+        explicit Nonexistent_config_file(std::string const& path);
 };
 
-class Config { // TODO Store the `path` too, so that we can throw proper exceptions
+class Config {
 public:
         static Config load(std::string const& path);
 
@@ -56,9 +61,9 @@ public:
                         auto const& value = values_.at(name);
                         return convert_string<T>(value);
                 } catch (std::out_of_range const&) {
-                        throw Nonexistent_config_value(name);
+                        throw Nonexistent_config_value(path_, name);
                 } catch (Conversion_failed const&) {
-                        throw Bad_config_value(name);
+                        throw Bad_config_value(path_, name);
                 }
         }
 
@@ -69,6 +74,7 @@ public:
         }
 
 private:
+        std::string path_;
         std::unordered_map<std::string, std::string> values_;
 };
 
