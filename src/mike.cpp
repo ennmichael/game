@@ -1,4 +1,5 @@
 #include "mike.h"
+#include <unordered_map>
 
 using namespace std::string_literals;
 
@@ -22,19 +23,39 @@ bool Mike::is_running() const noexcept
         return state_ == State::running;
 }
 
-bool Mike::is_preparing_to_jump() const noexcept
+bool Mike::is_preparing_to_jump_sideways() const noexcept
 {
-        return state_ == State::preparing_to_jump;
+        return state_ == State::preparing_to_jump_sideways;
+}
+
+bool Mike::is_jumping_sideways() const noexcept
+{
+        return state_ == State::jumping_sideways;
+}
+
+bool Mike::is_landing_sideways() const noexcept
+{
+        return state_ == State::landing_sideways;
+}
+
+bool Mike::is_jumping_in_place() const noexcept
+{
+        return state_ == State::jumping_in_place;
 }
 
 bool Mike::is_jumping() const noexcept
 {
-        return state_ == State::jumping;
+        return is_jumping_sideways() || is_jumping_in_place();
 }
 
 bool Mike::is_climbing() const noexcept
 {
         return state_ == State::climbing;
+}
+
+bool Mike::is_in_motion() const noexcept
+{
+        return is_jumping_sideways() || is_running();
 }
 
 bool Mike::is_facing_left() const noexcept
@@ -67,34 +88,54 @@ void Mike::stand_still() noexcept
 
 Engine::Gameplay::Timed_callback Mike::jump() noexcept
 {
-        auto const callback =
+        auto const jump_in_place =
         [this]
         {
-                state_ = State::jumping;
+                state_ = State::jumping_in_place;
+                return stand_still_after(durations_.at("jumping_in_place"s));
+        };
+
+        auto const land_sideways =
+        [this]
+        {
+                state_ = State::landing_sideways;
+                return stand_still_after(durations_.at("landing_sideways"s));
+        };
+
+        auto const jump_sideways =
+        [this, land_sideways]
+        {
+                state_ = State::preparing_to_jump_sideways;
+
                 return Engine::Gameplay::Timed_callback(
-                        [this] { stand_still(); },
-                        durations_.jump
+                        [this, land_sideways]
+                        {
+                                state_ = State::jumping_sideways;
+                                return Engine::Gameplay::Timed_callback(land_sideways, durations_.at("jumping_sideways"s));
+                        },
+                        durations_.at("preparing_to_jump_sideways"s)
                 );
         };
 
-        return Engine::Gameplay::Timed_callback(callback, durations_.jump_preparation);
+        if (is_standing_still())
+                return jump_in_place();
+        else
+                return jump_sideways();
 }
 
 void Mike::update_position() noexcept
 {
         auto const move_forward =
-        [this](double speed)
+        [this]
         {
                 if (is_facing_left())
-                        position_ -= speed;
+                        position_ -= speed_;
                 else if (is_facing_right())
-                        position_ += speed;
+                        position_ += speed_;
         };
 
-        if (is_running())
-                move_forward(speed_);
-        else if (is_jumping())
-                move_forward(speed_*2);
+        if (is_in_motion())
+                move_forward();
 }
 
 Direction Mike::direction() const noexcept
@@ -112,6 +153,14 @@ Engine::Complex_number Mike::position() const noexcept
         return position_;
 }
 
+Engine::Gameplay::Timed_callback Mike::stand_still_after(Engine::Duration::Frames duration)
+{
+        return Engine::Gameplay::Timed_callback(
+                [this]{ stand_still(); },
+                duration
+        );
+}
+
 void register_mike_keyboard_controls(Mike& mike, Engine::Gameplay::Signals& signals)
 {
         signals.frame_advance.connect(
@@ -124,8 +173,7 @@ void register_mike_keyboard_controls(Mike& mike, Engine::Gameplay::Signals& sign
                         if (keyboard.key_down(Engine::Sdl::Keycodes::w) ||
                             keyboard.key_down(Engine::Sdl::Keycodes::up) ||
                             keyboard.key_down(Engine::Sdl::Keycodes::space)) {
-                                auto const callback = mike.jump();
-                                main_loop.register_callback(callback);
+                                main_loop.register_callback(mike.jump());
                         } else if (keyboard.key_down(Engine::Sdl::Keycodes::a) ||
                                    keyboard.key_down(Engine::Sdl::Keycodes::left)) {
                                 mike.run_left();

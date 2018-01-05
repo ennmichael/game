@@ -1,32 +1,40 @@
-#include "sdl++.h"
 #include "SDL_image.h"
-#include <type_traits>
+#include "sdl++.h"
 
 namespace Engine::Sdl {
 
-void Window_deleter::operator()(SDL_Window* window) const noexcept
+void Window_deleter::operator()(Window* window) const noexcept
 {
         SDL_DestroyWindow(window);
 }
 
-void Renderer_deleter::operator()(SDL_Renderer* renderer) const noexcept
+void Renderer_deleter::operator()(Renderer* renderer) const noexcept
 {
         SDL_DestroyRenderer(renderer);
 }
 
-void Texture_deleter::operator()(SDL_Texture* texture) const noexcept
+void Texture_deleter::operator()(Texture* texture) const noexcept
 {
         SDL_DestroyTexture(texture);
 }
 
 char const* Error::what() const noexcept
 {
-        return SDL_GetError();
+        auto const* sdl_error = SDL_GetError();
+        if (sdl_error)
+                return sdl_error;
+
+        auto const* img_error = IMG_GetError();
+        if (img_error)
+                return img_error;
+
+        return "";
 }
 
 Manager::Manager()
 {
-        SDL_Init(SDL_INIT_EVERYTHING);
+        if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
+                throw Error();
 }
 
 Manager::~Manager()
@@ -39,54 +47,91 @@ WindowAndRenderer create_window_and_renderer(
         int width, 
         int height,
         Color background_color)
-{ // TODO Proper error checking
-        SDL_Window* window = nullptr;
-        SDL_Renderer* renderer = nullptr;
+{
+        Window* window = nullptr;
+        Renderer* renderer = nullptr;
 
-        SDL_CreateWindowAndRenderer(width, height, 0, &window, &renderer);
+        if (SDL_CreateWindowAndRenderer(width, height, 0, &window, &renderer) < 0)
+                throw Error();
 
         SDL_SetWindowTitle(window, title.c_str());
-        SDL_SetRenderDrawColor(renderer, 
-                               background_color.r,
-                               background_color.g,
-                               background_color.b,
-                               background_color.a);
+        
+        if (SDL_SetRenderDrawColor(renderer, 
+                                   background_color.r,
+                                   background_color.g,
+                                   background_color.b,
+                                   background_color.a) < 0) {
+                throw Error();
+        }
 
-        return WindowAndRenderer(Window(window), Renderer(renderer));
+        return WindowAndRenderer(Unique_window(window), Unique_renderer(renderer));
 }
 
-void render_clear(Renderer const& renderer)
-{ // TODO Error handling
-        SDL_RenderClear(renderer.get());
-}
-
-void render_present(Renderer const& renderer)
+void render_clear(Renderer& renderer)
 {
-        SDL_RenderPresent(renderer.get());
+        if (SDL_RenderClear(&renderer) < 0)
+                throw Error();
 }
 
-void render_copy(Renderer const& renderer, 
-                 Texture const& texture, 
+void render_present(Renderer& renderer)
+{
+        SDL_RenderPresent(&renderer);
+}
+
+void render_copy(Renderer& renderer, 
+                 Texture& texture, 
                  Rect source, 
                  Rect destination,
                  double angle,
                  Flip flip)
-{ // TODO Error handling
-        SDL_RenderCopyEx(renderer.get(),
-                        texture.get(),
-                        &source,
-                        &destination,
-                        angle,
-                        nullptr, // Center point, fine this way
-                        static_cast<SDL_RendererFlip>(flip));
-}
-
-Texture load_texture(Renderer const& renderer, std::string const& path)
 {
-        return Texture(IMG_LoadTexture(renderer.get(), path.c_str()));
+        if (SDL_RenderCopyEx(&renderer,
+                             &texture,
+                             &source,
+                             &destination,
+                             angle,
+                             nullptr, // Center point, fine this way
+                             static_cast<SDL_RendererFlip>(flip)) < 0) {
+                throw Error();
+        }
 }
 
-Dimensions texture_dimensions(Texture const& texture)
+void render_copy(Renderer& renderer,
+                 Texture& texture,
+                 Complex_number position,
+                 double angle,
+                 Flip flip)
+{
+        auto const [width, height] = texture_dimensions(texture);
+
+        Rect const src {
+                0,
+                0,
+                width,
+                height
+        };
+
+        Rect const dst {
+                static_cast<int>(position.real()),
+                static_cast<int>(position.imag()),
+                width,
+                height
+        };
+
+        render_copy(renderer, texture, src, dst, angle, flip);
+}
+
+Unique_texture load_texture(Renderer& renderer, std::string const& path)
+{
+        auto* texture = IMG_LoadTexture(&renderer, path.c_str());
+
+        if (!texture)
+                throw Error();
+
+        return Unique_texture(texture);
+}
+
+Dimensions texture_dimensions(Texture& texture)
 {
         return {
                 texture_width(texture),
@@ -94,23 +139,25 @@ Dimensions texture_dimensions(Texture const& texture)
         };
 }
 
-int texture_width(Texture const& texture)
+int texture_width(Texture& texture)
 {
         int width;
-        SDL_QueryTexture(texture.get(), nullptr, nullptr, &width, nullptr);
+        if (SDL_QueryTexture(&texture, nullptr, nullptr, &width, nullptr) < 0)
+                throw Error();
         return width;
 }
 
-int texture_height(Texture const& texture)
+int texture_height(Texture& texture)
 {
         int height;
-        SDL_QueryTexture(texture.get(), nullptr, nullptr, nullptr, &height);
+        if (SDL_QueryTexture(&texture, nullptr, nullptr, nullptr, &height) < 0)
+                throw Error();
         return height;
 }
 
-int get_ticks() noexcept
+Duration::Milliseconds get_ticks() noexcept
 {
-        return SDL_GetTicks();
+        return Duration::Milliseconds {SDL_GetTicks()};
 }
 
 Optional_event poll_event()

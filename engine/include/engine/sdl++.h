@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base.h"
 #include <SDL2/SDL.h>
 #include <memory>
 #include <utility>
@@ -8,8 +9,6 @@
 #include <exception>
 #include <optional>
 #include <type_traits>
-
-// TODO Don't take `unique_ptr`s in interfaces
 
 namespace Engine::Sdl {
 
@@ -40,6 +39,10 @@ public:
         void operator()(SDL_Texture* texture) const noexcept;
 };
 
+using Window   = SDL_Window;
+using Renderer = SDL_Renderer;
+using Texture  = SDL_Texture;
+
 using Rect  = SDL_Rect;
 using Color = SDL_Color;
 using Event = SDL_Event;
@@ -51,9 +54,9 @@ Color constexpr white {255, 255, 255, 255};
 
 }
 
-using Window   = std::unique_ptr<SDL_Window, Window_deleter>;
-using Renderer = std::unique_ptr<SDL_Renderer, Renderer_deleter>;
-using Texture  = std::unique_ptr<SDL_Texture, Texture_deleter>;
+using Unique_window   = std::unique_ptr<Window, Window_deleter>;
+using Unique_renderer = std::unique_ptr<Renderer, Renderer_deleter>;
+using Unique_texture  = std::unique_ptr<Texture, Texture_deleter>;
 
 class Error : public std::exception {
 public:
@@ -72,15 +75,15 @@ public:
         Manager& operator=(Manager&&) = delete;
 };
 
-using WindowAndRenderer = std::pair<Window, Renderer>;
+using WindowAndRenderer = std::pair<Unique_window, Unique_renderer>;
 
 WindowAndRenderer create_window_and_renderer(std::string const& title,
                                              int width,
                                              int height,
                                              Color background_color=Colors::white);
 
-void render_clear(Renderer const& renderer);
-void render_present(Renderer const& renderer);
+void render_clear(Renderer& renderer);
+void render_present(Renderer& renderer);
 
 enum class Flip {
         none = SDL_FLIP_NONE,
@@ -88,25 +91,31 @@ enum class Flip {
         horizontal = SDL_FLIP_HORIZONTAL
 };
 
-void render_copy(Renderer const& renderer, 
-                 Texture const& texture, 
+void render_copy(Renderer& renderer, 
+                 Texture& texture, 
                  Rect source, 
                  Rect destination,
                  double angle=0,
                  Flip flip=Flip::none);
 
-Texture load_texture(Renderer const& renderer, std::string const& path);
+void render_copy(Renderer& renderer,
+                 Texture& texture,
+                 Complex_number position,
+                 double angle=0,
+                 Flip flip=Flip::none);
+
+Unique_texture load_texture(Renderer& renderer, std::string const& path);
 
 struct Dimensions {
         int width;
         int height;
 };
 
-Dimensions texture_dimensions(Texture const& texture);
-int texture_width(Texture const& texture);
-int texture_height(Texture const& texture);
+Dimensions texture_dimensions(Texture& texture);
+int texture_width(Texture& texture);
+int texture_height(Texture& texture);
 
-int get_ticks() noexcept;
+Duration::Milliseconds get_ticks() noexcept;
 
 Optional_event poll_event();
 

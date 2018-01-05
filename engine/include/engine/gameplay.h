@@ -27,7 +27,7 @@ public:
 
 private:
         Duration::Milliseconds duration_;
-        int initiation_time_ = Sdl::get_ticks();
+        Duration::Milliseconds initiation_time_ = Sdl::get_ticks();
 };
 
 class Frame_timer {

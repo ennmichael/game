@@ -1,6 +1,7 @@
 #pragma once
 
 #include "engine/engine.h"
+#include <unordered_map>
 
 namespace Game::Logic {
 
@@ -15,24 +16,27 @@ public:
         enum class State {
                 standing_still,
                 running,
-                preparing_to_jump,
-                jumping,
+                preparing_to_jump_sideways,
+                jumping_sideways,
+                landing_sideways,
+                jumping_in_place,
                 climbing
         };
 
-        struct Actions_durations {
-                Engine::Duration::Frames jump_preparation {0};
-                Engine::Duration::Frames jump {0};
-        };
+        using Actions_durations = std::unordered_map<std::string, Engine::Duration::Frames>;
 
         Mike(Engine::Complex_number position,
              Actions_durations const& durations) noexcept;
 
         bool is_standing_still() const noexcept;
         bool is_running() const noexcept;
-        bool is_preparing_to_jump() const noexcept;
+        bool is_preparing_to_jump_sideways() const noexcept;
+        bool is_jumping_sideways() const noexcept;
+        bool is_landing_sideways() const noexcept;
+        bool is_jumping_in_place() const noexcept;
         bool is_jumping() const noexcept;
         bool is_climbing() const noexcept;
+        bool is_in_motion() const noexcept;
 
         bool is_facing_left() const noexcept;
         bool is_facing_right() const noexcept;
@@ -50,7 +54,7 @@ public:
         Engine::Complex_number position() const noexcept;
 
 private:
-        bool user_has_control() const noexcept;
+        Engine::Gameplay::Timed_callback stand_still_after(Engine::Duration::Frames duration);
 
         Engine::Complex_number position_;
         Actions_durations durations_;

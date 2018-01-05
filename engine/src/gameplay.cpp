@@ -4,6 +4,7 @@
 #include <optional>
 #include <exception>
 #include <cassert>
+#include <type_traits>
 
 namespace Engine::Gameplay {
 
@@ -14,7 +15,7 @@ Timer::Timer(Duration::Milliseconds duration) noexcept
 bool Timer::ready() const noexcept
 {
         auto const ticks = Sdl::get_ticks();
-        return ticks >= initiation_time_ + Utils::underlying_value(duration_);
+        return ticks >= initiation_time_ + duration_;
 }
 
 void Timer::restart() noexcept
@@ -33,11 +34,8 @@ Frame_timer::Frame_timer(Duration::Frames duration) noexcept
 
 void Frame_timer::update() noexcept
 {
-        if (Utils::underlying_value(remaining_duration_) > 0) {
-                remaining_duration_ = Duration::Frames {
-                        Utils::underlying_value(remaining_duration_) - 1
-                };
-        }
+        if (Utils::underlying_value(remaining_duration_) > 0)
+                --remaining_duration_;
 }
 
 bool Frame_timer::ready() const noexcept
@@ -123,7 +121,7 @@ void Main_loop::start(Signals const& signals, int fps)
         {
                 auto const frames_per_millisecond = fps / 1000.0;
                 return Duration::Milliseconds {
-                        static_cast<int>(1 / frames_per_millisecond)
+                        static_cast<std::underlying_type_t<Duration::Milliseconds>>(1 / frames_per_millisecond)
                 };
         };
 
@@ -149,11 +147,10 @@ void Main_loop::start(Signals const& signals, int fps)
                 while (auto const event = Sdl::poll_event())
                         quit = dispatch_event(*event, keyboard, signals);
 
-                execute_ready_callbacks(callbacks_);
-
                 if (timer.ready()) {
-                        signals.frame_advance(*this, keyboard);
                         update_callbacks_timers(callbacks_);
+                        execute_ready_callbacks(callbacks_);
+                        signals.frame_advance(*this, keyboard); 
                         timer.restart();
                 }
         }
