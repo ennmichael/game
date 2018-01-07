@@ -5,6 +5,8 @@
 #include <exception>
 #include <cassert>
 #include <type_traits>
+#include <iterator>
+#include <algorithm>
 
 namespace Engine::Gameplay {
 
@@ -159,6 +161,60 @@ void Main_loop::start(Signals const& signals, int fps)
 void Main_loop::register_callback(Timed_callback const& callback)
 {
         callbacks_.push_back(callback);
+}
+
+Checkboxes close_checkboxes(Checkboxes const& checkboxes,
+                            Complex_number pivot,
+                            double minimum_distance)
+{
+        return Utils::filter(checkboxes,
+                [pivot, minimum_distance](Checkbox checkbox)
+                {
+                        auto const distance = Utils::distance(checkbox.position, pivot);
+                        return distance <= minimum_distance;
+                }
+        );
+}
+
+Sdl::Rect Checkbox::to_rect() const noexcept
+{
+        return {
+                static_cast<int>(position.real()),
+                static_cast<int>(position.imag()),
+                width,
+                height
+        };
+}
+
+bool Checkbox::can_be_translated(Complex_number delta,
+                                 Checkboxes const& solid_checkboxes) const noexcept
+{
+        auto const translated_checkbox = translated(delta);
+        return !translated_checkbox.collides_with_any(solid_checkboxes);
+}
+
+bool Checkbox::collides_with(Checkbox checkbox) const noexcept
+{
+        return Sdl::has_intersection(to_rect(), checkbox.to_rect());
+}
+
+bool Checkbox::collides_with_any(Checkboxes const& checkboxes)const noexcept
+{
+        return std::any_of(checkboxes.cbegin(), checkboxes.cend(),
+                [this](Checkbox checkbox)
+                {
+                        return collides_with(checkbox);
+                }
+        );
+}
+
+Checkbox Checkbox::translated(Complex_number delta) const noexcept
+{
+        return {
+                position + delta,
+                width,
+                height
+        };
 }
 
 }

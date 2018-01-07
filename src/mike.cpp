@@ -123,19 +123,19 @@ Engine::Gameplay::Timed_callback Mike::jump() noexcept
                 return jump_sideways();
 }
 
-void Mike::update_position() noexcept
+void Mike::update_position(Engine::Gameplay::Checkboxes const& solid_checkboxes) noexcept
 {
         auto const move_forward =
-        [this]
+        [this](Engine::Gameplay::Checkboxes solid_checkboxes)
         {
                 if (is_facing_left())
-                        position_ -= speed_;
+                        translate_if_possible(-speed_, solid_checkboxes);
                 else if (is_facing_right())
-                        position_ += speed_;
+                        translate_if_possible(speed_, solid_checkboxes);
         };
 
         if (is_in_motion())
-                move_forward();
+                move_forward(solid_checkboxes);
 }
 
 Direction Mike::direction() const noexcept
@@ -159,6 +159,28 @@ Engine::Gameplay::Timed_callback Mike::stand_still_after(Engine::Duration::Frame
                 [this]{ stand_still(); },
                 duration
         );
+}
+
+Engine::Gameplay::Checkbox Mike::checkbox() const noexcept
+{
+        return {
+                position_,
+                checkbox_width,
+                checkbox_height
+        };
+}
+
+bool Mike::can_be_translated(Engine::Complex_number delta,
+                             Engine::Gameplay::Checkboxes const& solid_checkboxes) const noexcept
+{
+        return checkbox().can_be_translated(delta, solid_checkboxes);
+}
+
+void Mike::translate_if_possible(Engine::Complex_number delta,
+                                 Engine::Gameplay::Checkboxes const& solid_checkboxes) noexcept
+{
+        if (can_be_translated(delta, solid_checkboxes))
+                position_ += delta;
 }
 
 void register_mike_keyboard_controls(Mike& mike, Engine::Gameplay::Signals& signals)

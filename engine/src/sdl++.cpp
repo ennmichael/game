@@ -42,29 +42,31 @@ Manager::~Manager()
         SDL_Quit();
 }
 
-WindowAndRenderer create_window_and_renderer(
-        std::string title, 
-        int width, 
-        int height,
-        Color background_color)
+Unique_window create_window(std::string const& title, int width, int height)
 {
-        Window* window = nullptr;
-        Renderer* renderer = nullptr;
+        auto* window = SDL_CreateWindow(title.c_str(),
+                                        SDL_WINDOWPOS_UNDEFINED,
+                                        SDL_WINDOWPOS_UNDEFINED,
+                                        width,
+                                        height,
+                                        0);
 
-        if (SDL_CreateWindowAndRenderer(width, height, 0, &window, &renderer) < 0)
+        if (!window)
                 throw Error();
 
-        SDL_SetWindowTitle(window, title.c_str());
-        
-        if (SDL_SetRenderDrawColor(renderer, 
-                                   background_color.r,
-                                   background_color.g,
-                                   background_color.b,
-                                   background_color.a) < 0) {
-                throw Error();
-        }
+        return Unique_window(window);
+}
 
-        return WindowAndRenderer(Unique_window(window), Unique_renderer(renderer));
+Unique_renderer create_renderer(Window& window)
+{
+        auto* renderer = SDL_CreateRenderer(&window, -1, 0);
+
+        if (!renderer)
+                throw Error();
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+
+        return Unique_renderer(renderer);
 }
 
 void render_clear(Renderer& renderer)
@@ -129,6 +131,11 @@ Unique_texture load_texture(Renderer& renderer, std::string path)
                 throw Error();
 
         return Unique_texture(texture);
+}
+
+bool has_intersection(Rect r1, Rect r2) noexcept
+{
+        return SDL_HasIntersection(&r1, &r2);
 }
 
 Dimensions texture_dimensions(Texture& texture)

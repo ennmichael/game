@@ -44,10 +44,9 @@ public:
         void run_left() noexcept;
         void run_right() noexcept;
         void stand_still() noexcept;
-
         Engine::Gameplay::Timed_callback jump() noexcept;
       
-        void update_position() noexcept;
+        void update_position(Engine::Gameplay::Checkboxes const& solid_checkboxes) noexcept;
 
         Direction direction() const noexcept;
         State state() const noexcept;
@@ -55,11 +54,18 @@ public:
 
 private:
         Engine::Gameplay::Timed_callback stand_still_after(Engine::Duration::Frames duration);
+        Engine::Gameplay::Checkbox checkbox() const noexcept;
+        bool can_be_translated(Engine::Complex_number delta,
+                               Engine::Gameplay::Checkboxes const& solid_checkboxes) const noexcept;
+        void translate_if_possible(Engine::Complex_number delta,
+                                   Engine::Gameplay::Checkboxes const& solid_checkboxes) noexcept;
 
         Engine::Complex_number position_;
         Actions_durations durations_;
+        int checkbox_width;
+        int checkbox_height;
         Direction direction_ = Direction::none;
-        State state_ = State::standing_still; 
+        State state_ = State::standing_still;
         double speed_ = 0;
 };
 

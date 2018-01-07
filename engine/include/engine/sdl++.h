@@ -44,15 +44,8 @@ using Renderer = SDL_Renderer;
 using Texture  = SDL_Texture;
 
 using Rect  = SDL_Rect;
-using Color = SDL_Color;
 using Event = SDL_Event;
 using Optional_event = std::optional<Event>;
-
-namespace Colors {
-
-Color constexpr white {255, 255, 255, 255};
-
-}
 
 using Unique_window   = std::unique_ptr<Window, Window_deleter>;
 using Unique_renderer = std::unique_ptr<Renderer, Renderer_deleter>;
@@ -75,12 +68,8 @@ public:
         Manager& operator=(Manager&&) = delete;
 };
 
-using WindowAndRenderer = std::pair<Unique_window, Unique_renderer>;
-
-WindowAndRenderer create_window_and_renderer(std::string title,
-                                             int width,
-                                             int height,
-                                             Color background_color=Colors::white);
+Unique_window create_window(std::string const& title, int width, int height);
+Unique_renderer create_renderer(Window& window);
 
 void render_clear(Renderer& renderer);
 void render_present(Renderer& renderer);
@@ -105,6 +94,8 @@ void render_copy(Renderer& renderer,
                  Flip flip=Flip::none);
 
 Unique_texture load_texture(Renderer& renderer, std::string path);
+
+bool has_intersection(Rect r1, Rect r2) noexcept;
 
 struct Dimensions {
         int width;

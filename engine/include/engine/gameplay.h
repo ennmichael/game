@@ -85,5 +85,26 @@ private:
         std::vector<Timed_callback> callbacks_;
 };
 
+struct Checkbox;
+
+using Checkboxes = std::vector<Checkbox>;
+
+Checkboxes close_checkboxes(Checkboxes const& checkboxes,
+                            Complex_number pivot,
+                            double minimum_distance);
+
+struct Checkbox {
+        Sdl::Rect to_rect() const noexcept;
+        bool can_be_translated(Complex_number delta,
+                               Checkboxes const& solid_checkboxes) const noexcept;
+        bool collides_with(Checkbox checkbox) const noexcept;
+        bool collides_with_any(Checkboxes const& checkboxes) const noexcept;
+        Checkbox translated(Complex_number delta) const noexcept;
+
+        Complex_number position;
+        int width;
+        int height;
+};
+
 }
 

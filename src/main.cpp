@@ -11,6 +11,8 @@
 
 
 
+// TODO Rename Game::Logic -> Game::Gameplay
+
 using namespace std::string_literals;
 using namespace std::complex_literals;
 
@@ -19,8 +21,8 @@ int main()
         Engine::Sdl::Manager manager;
         (void)manager;
 
-        auto [window, renderer] = Engine::Sdl::create_window_and_renderer("Title"s, 500, 500);
-        (void)window;
+        auto window = Engine::Sdl::create_window("Title"s, 500, 500);
+        auto renderer = Engine::Sdl::create_renderer(*window);
 
         Engine::Graphics::Animated_sprites sprites = Game::Graphics::load_mike_sprites(*renderer);
         Game::Logic::Mike mike(0.0 + 150.0i, Engine::Graphics::animations_durations(sprites));
@@ -31,13 +33,15 @@ int main()
         Engine::Gameplay::Signals signals;
         Game::Logic::register_mike_keyboard_controls(mike, signals);
 
+        Engine::Gameplay::Checkboxes solid_checkboxes;
+
         std::cout << SDL_GetError() << '\n';
 
         auto const on_frame_advance =
         [&](Engine::Gameplay::Main_loop&, Engine::Gameplay::Keyboard const&)
         {
                 Engine::Sdl::render_clear(*renderer);
-                mike.update_position();
+                mike.update_position(solid_checkboxes);
                 Engine::Sdl::render_copy(*renderer, *block_texture, 10.0 + 100.0i);
                 mike_sprite.render(*renderer);
                 mike_sprite.update();
