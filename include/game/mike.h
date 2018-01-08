@@ -22,9 +22,20 @@ public:
                 jumping_sideways,
                 landing_sideways,
                 jumping_in_place,
-                climbing
+                climbing,
+                pushing,
+                pulling
         };
 
+        struct Standing_still {};
+        struct Running {};
+        struct Preparing_to_jump_sideways {};
+        struct Jumping_sideways {};
+        struct Jumping_in_place {};
+        struct Climbing {};
+        struct Pushing {};
+        struct Pulling {};
+        
         using Actions_durations = std::unordered_map<std::string, Engine::Duration::Frames>;
 
         Mike(Engine::Complex_number position,

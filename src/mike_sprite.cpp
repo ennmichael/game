@@ -7,6 +7,10 @@ namespace Game::Graphics {
 
 Engine::Graphics::Animated_sprites load_mike_sprites(Engine::Sdl::Renderer& renderer)
 {
+        // TODO Load sprites lazily
+        // TODO In production, we'll load the entire sprites texture right away,
+        // and then load the individual configs lazily
+
         Engine::Graphics::Animated_sprites sprites;
 
         Engine::Graphics::load_animated_sprite(sprites, renderer, "../res/sprites/running"s);
@@ -15,6 +19,8 @@ Engine::Graphics::Animated_sprites load_mike_sprites(Engine::Sdl::Renderer& rend
         Engine::Graphics::load_animated_sprite(sprites, renderer, "../res/sprites/jumping_sideways"s);
         Engine::Graphics::load_animated_sprite(sprites, renderer, "../res/sprites/jumping_in_place"s);
         Engine::Graphics::load_animated_sprite(sprites, renderer, "../res/sprites/landing_sideways"s);
+        Engine::Graphics::load_animated_sprite(sprites, renderer, "../res/sprites/pulling");
+        Engine::Graphics::load_animated_sprite(sprites, renderer, "../res/sprites/pushing");
 
         return sprites;
 }
@@ -46,6 +52,8 @@ Engine::Graphics::Animated_sprite& Mike_sprite::current_sprite() noexcept
                 case Logic::Mike::State::jumping_sideways: return sprites_->at("jumping_sideways"s);
                 case Logic::Mike::State::landing_sideways: return sprites_->at("landing_sideways"s);
                 case Logic::Mike::State::climbing: return sprites_->at("climbing"s);
+                case Logic::Mike::State::pulling: return sprites_->at("pulling"s);
+                case Logic::Mike::State::pushing: return sprites_->at("pushing"s);
         }
 
         assert(false);

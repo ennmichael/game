@@ -3,6 +3,8 @@
 #include "engine/sdl++.h"
 #include "block.h"
 
+// TODO This file is misnamed
+
 namespace Game::Graphics {
 
 class Block_texture {

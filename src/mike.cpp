@@ -190,26 +190,68 @@ void Mike::translate_if_possible(Engine::Complex_number delta,
 
 void register_mike_keyboard_controls(Mike& mike, Engine::Gameplay::Signals& signals)
 {
+        // TODO Generalize the key binding system
+
+        struct Key_binding { // We could use function pointers here, if that matters
+                std::function<bool(Engine::Gameplay::Keyboard const&)> checker;
+                std::function<void(Engine::Gameplay::Main_loop&)> callback;
+        };
+
+        std::vector key_bindings {
+                Key_binding {
+                        [](Engine::Gameplay::Keyboard const& keyboard) noexcept
+                        {
+                                return keyboard.key_down(Engine::Sdl::Keycodes::a) ||
+                                       keyboard.key_down(Engine::Sdl::Keycodes::left);
+                        },
+                        [&](Engine::Gameplay::Main_loop&)
+                        {
+                                mike.run_left();
+                        }
+                },
+                Key_binding {
+                        [](Engine::Gameplay::Keyboard const& keyboard) noexcept
+                        {
+                                return keyboard.key_down(Engine::Sdl::Keycodes::d) ||
+                                       keyboard.key_down(Engine::Sdl::Keycodes::right);
+                        },
+                        [&](Engine::Gameplay::Main_loop&)
+                        {
+                                mike.run_right();
+                        }
+                },
+                Key_binding {
+                        [](Engine::Gameplay::Keyboard const& keyboard) noexcept
+                        {
+                                return keyboard.key_pressed(Engine::Sdl::Keycodes::w) ||
+                                       keyboard.key_pressed(Engine::Sdl::Keycodes::up) ||
+                                       keyboard.key_pressed(Engine::Sdl::Keycodes::space);
+                        },
+                        [&](Engine::Gameplay::Main_loop& main_loop)
+                        {
+                                main_loop.register_callback(mike.jump());
+                        }
+                }
+        };
+
         signals.frame_advance.connect(
-                [&mike](Engine::Gameplay::Main_loop& main_loop,
-                        Engine::Gameplay::Keyboard const& keyboard)
+                [&mike, key_bindings = std::move(key_bindings)](Engine::Gameplay::Main_loop& main_loop,
+                                                                Engine::Gameplay::Keyboard const& keyboard)
                 {
                         if (!user_has_control(mike))
                                 return;
 
-                        if (keyboard.key_down(Engine::Sdl::Keycodes::w) ||
-                            keyboard.key_down(Engine::Sdl::Keycodes::up) ||
-                            keyboard.key_down(Engine::Sdl::Keycodes::space)) {
-                                main_loop.register_callback(mike.jump());
-                        } else if (keyboard.key_down(Engine::Sdl::Keycodes::a) ||
-                                   keyboard.key_down(Engine::Sdl::Keycodes::left)) {
-                                mike.run_left();
-                        } else if (keyboard.key_down(Engine::Sdl::Keycodes::d) ||
-                                   keyboard.key_down(Engine::Sdl::Keycodes::right)) {
-                                mike.run_right();
-                        } else {
-                                mike.stand_still();
+                        bool no_key_pressed = true;
+
+                        for (auto const& [checker, callback] : key_bindings) {
+                                if (checker(keyboard)) {
+                                        callback(main_loop);
+                                        no_key_pressed = false;
+                                }
                         }
+
+                        if (no_key_pressed)
+                                mike.stand_still();
                 }
         );
 }
