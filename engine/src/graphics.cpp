@@ -30,6 +30,16 @@ void Sprite::render_frame(Sdl::Renderer& renderer,
                          flip);
 }
 
+int Sprite::frame_width() const noexcept
+{
+        return frame_width_;
+}
+
+int Sprite::frame_height() const noexcept
+{
+        return frame_height_;
+}
+
 Sdl::Rect Sprite::source_rect(int frame_num) const noexcept
 {
         return { 
@@ -151,6 +161,16 @@ Animations_durations animations_durations(Animated_sprites const& sprites)
         }
 
         return durations;
+}
+
+int Animated_sprite::frame_width() const noexcept
+{
+        return sprite_.frame_width();
+}
+
+int Animated_sprite::frame_height() const noexcept
+{
+        return sprite_.frame_height();
 }
 
 }

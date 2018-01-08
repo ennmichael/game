@@ -17,6 +17,9 @@ public:
                           double angle=0,
                           Sdl::Flip flip=Sdl::Flip::none);
 
+        int frame_width() const noexcept;
+        int frame_height() const noexcept;
+
 private:
         Sdl::Rect source_rect(int frame_num) const noexcept;
         Sdl::Rect destination_rect(Complex_number position) const noexcept;
@@ -60,6 +63,9 @@ public:
                     Complex_number position,
                     double angle=0,
                     Sdl::Flip flip=Sdl::Flip::none);
+
+        int frame_width() const noexcept;
+        int frame_height() const noexcept;
 
 private:
         Sprite sprite_;

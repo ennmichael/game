@@ -5,9 +5,14 @@ using namespace std::string_literals;
 
 namespace Game::Logic {
 
-Mike::Mike(Engine::Complex_number position, Actions_durations const& durations) noexcept
+Mike::Mike(Engine::Complex_number position,
+           Actions_durations const& durations,
+           int width,
+           int height) noexcept
         : position_(position)
         , durations_(durations)
+        , width_(width)
+        , height_(height)
 {
         auto const config = Engine::Config::load("../res/mike.config"s);
         config.unpack_value("speed"s, speed_);
@@ -123,19 +128,19 @@ Engine::Gameplay::Timed_callback Mike::jump() noexcept
                 return jump_sideways();
 }
 
-void Mike::update_position(Engine::Gameplay::Checkboxes const& solid_checkboxes) noexcept
+void Mike::update_position(Engine::Gameplay::Checkboxes_thunks const& solid_checkboxes_thunks) noexcept
 {
         auto const move_forward =
-        [this](Engine::Gameplay::Checkboxes solid_checkboxes)
+        [this](Engine::Gameplay::Checkboxes_thunks solid_checkboxes_thunks)
         {
                 if (is_facing_left())
-                        translate_if_possible(-speed_, solid_checkboxes);
+                        translate_if_possible(-speed_, solid_checkboxes_thunks);
                 else if (is_facing_right())
-                        translate_if_possible(speed_, solid_checkboxes);
+                        translate_if_possible(speed_, solid_checkboxes_thunks);
         };
 
         if (is_in_motion())
-                move_forward(solid_checkboxes);
+                move_forward(solid_checkboxes_thunks);
 }
 
 Direction Mike::direction() const noexcept
@@ -165,21 +170,21 @@ Engine::Gameplay::Checkbox Mike::checkbox() const noexcept
 {
         return {
                 position_,
-                checkbox_width,
-                checkbox_height
+                width_,
+                height_
         };
 }
 
 bool Mike::can_be_translated(Engine::Complex_number delta,
-                             Engine::Gameplay::Checkboxes const& solid_checkboxes) const noexcept
+                             Engine::Gameplay::Checkboxes_thunks const& solid_checkboxes_thunks) const noexcept
 {
-        return checkbox().can_be_translated(delta, solid_checkboxes);
+        return checkbox().can_be_translated(delta, solid_checkboxes_thunks);
 }
 
 void Mike::translate_if_possible(Engine::Complex_number delta,
-                                 Engine::Gameplay::Checkboxes const& solid_checkboxes) noexcept
+                                 Engine::Gameplay::Checkboxes_thunks const& solid_checkboxes_thunks) noexcept
 {
-        if (can_be_translated(delta, solid_checkboxes))
+        if (can_be_translated(delta, solid_checkboxes_thunks))
                 position_ += delta;
 }
 

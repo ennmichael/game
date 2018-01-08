@@ -87,18 +87,19 @@ private:
 
 struct Checkbox;
 
-using Checkboxes = std::vector<Checkbox>;
+using Checkbox_thunk = std::function<Checkbox()>;
+using Checkboxes_thunks = std::vector<Checkbox_thunk>;
 
-Checkboxes close_checkboxes(Checkboxes const& checkboxes,
-                            Complex_number pivot,
-                            double minimum_distance);
+Checkboxes_thunks close_checkboxes(Checkboxes_thunks const& checkboxes,
+                                   Complex_number pivot,
+                                   double minimum_distance);
 
 struct Checkbox {
         Sdl::Rect to_rect() const noexcept;
         bool can_be_translated(Complex_number delta,
-                               Checkboxes const& solid_checkboxes) const noexcept;
+                               Checkboxes_thunks const& solid_checkboxes) const noexcept;
         bool collides_with(Checkbox checkbox) const noexcept;
-        bool collides_with_any(Checkboxes const& checkboxes) const noexcept;
+        bool collides_with_any(Checkboxes_thunks const& checkboxes) const noexcept;
         Checkbox translated(Complex_number delta) const noexcept;
 
         Complex_number position;

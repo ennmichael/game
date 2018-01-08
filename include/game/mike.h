@@ -3,6 +3,8 @@
 #include "engine/engine.h"
 #include <unordered_map>
 
+// TODO Make a difference between checkboxes and their thunks
+
 namespace Game::Logic {
 
 enum class Direction {
@@ -26,7 +28,9 @@ public:
         using Actions_durations = std::unordered_map<std::string, Engine::Duration::Frames>;
 
         Mike(Engine::Complex_number position,
-             Actions_durations const& durations) noexcept;
+             Actions_durations const& durations,
+             int width,
+             int height) noexcept;
 
         bool is_standing_still() const noexcept;
         bool is_running() const noexcept;
@@ -46,7 +50,7 @@ public:
         void stand_still() noexcept;
         Engine::Gameplay::Timed_callback jump() noexcept;
       
-        void update_position(Engine::Gameplay::Checkboxes const& solid_checkboxes) noexcept;
+        void update_position(Engine::Gameplay::Checkboxes_thunks const& solid_checkboxes_thunks) noexcept;
 
         Direction direction() const noexcept;
         State state() const noexcept;
@@ -54,16 +58,16 @@ public:
 
 private:
         Engine::Gameplay::Timed_callback stand_still_after(Engine::Duration::Frames duration);
-        Engine::Gameplay::Checkbox checkbox() const noexcept;
+        Engine::Gameplay::Checkbox checkbox() const noexcept; // This could be public, doesn't matter right now
         bool can_be_translated(Engine::Complex_number delta,
-                               Engine::Gameplay::Checkboxes const& solid_checkboxes) const noexcept;
+                               Engine::Gameplay::Checkboxes_thunks const& solid_checkboxes_thunks) const noexcept;
         void translate_if_possible(Engine::Complex_number delta,
-                                   Engine::Gameplay::Checkboxes const& solid_checkboxes) noexcept;
+                                   Engine::Gameplay::Checkboxes_thunks const& solid_checkboxes_thunks) noexcept;
 
         Engine::Complex_number position_;
         Actions_durations durations_;
-        int checkbox_width;
-        int checkbox_height;
+        int width_;
+        int height_;
         Direction direction_ = Direction::none;
         State state_ = State::standing_still;
         double speed_ = 0;
