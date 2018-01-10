@@ -97,15 +97,23 @@ Checkboxes_thunks close_checkboxes(Checkboxes_thunks const& checkboxes,
 struct Checkbox {
         Sdl::Rect to_rect() const noexcept;
         bool can_be_translated(Complex_number delta,
-                               Checkboxes_thunks const& solid_checkboxes) const noexcept;
+                               Checkboxes_thunks const& solid_checkboxes_thunks) const noexcept;
         bool collides_with(Checkbox checkbox) const noexcept;
-        bool collides_with_any(Checkboxes_thunks const& checkboxes) const noexcept;
+        bool collides_with_any(Checkboxes_thunks const& checkboxes_thunks) const noexcept;
         Checkbox translated(Complex_number delta) const noexcept;
 
         Complex_number position;
         int width;
         int height;
 };
+
+Engine::Complex_number center_position(Checkbox checkbox) noexcept;
+
+template <class T>
+Engine::Complex_number center_position(T const& obj) noexcept(noexcept(obj.checkbox()))
+{
+        return center_position(obj.checkbox());
+}
 
 }
 

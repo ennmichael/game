@@ -1,9 +1,10 @@
 #pragma once
 
 #include "engine/engine.h"
+#include "block.h"
+#include "utils.h"
 #include <unordered_map>
-
-// TODO Make a difference between checkboxes and their thunks
+#include <variant>
 
 namespace Game::Logic {
 
@@ -13,28 +14,40 @@ enum class Direction {
         right
 };
 
+// TODO Rename Standing_still -> Idle
+
 class Mike {
 public:
-        enum class State {
-                standing_still,
-                running,
-                preparing_to_jump_sideways,
-                jumping_sideways,
-                landing_sideways,
-                jumping_in_place,
-                climbing,
-                pushing,
-                pulling
-        };
-
         struct Standing_still {};
         struct Running {};
         struct Preparing_to_jump_sideways {};
         struct Jumping_sideways {};
+        struct Landing_sideways {};
         struct Jumping_in_place {};
         struct Climbing {};
-        struct Pushing {};
-        struct Pulling {};
+
+        struct Holding_block {
+                Blocks::iterator block;
+        };
+
+        struct Pushing_block {
+                Blocks::iterator block;
+        };
+
+        struct Pulling_block {
+                Blocks::iterator block;
+        };
+
+        using State = std::variant<Standing_still,
+                                   Running,
+                                   Preparing_to_jump_sideways,
+                                   Jumping_sideways,
+                                   Landing_sideways,
+                                   Jumping_in_place,
+                                   Climbing,
+                                   Holding_block,
+                                   Pushing_block,
+                                   Pulling_block>;
         
         using Actions_durations = std::unordered_map<std::string, Engine::Duration::Frames>;
 
@@ -51,13 +64,23 @@ public:
         bool is_jumping_in_place() const noexcept;
         bool is_jumping() const noexcept;
         bool is_climbing() const noexcept;
+        bool is_holding_block() const noexcept;
+        bool is_pushing_block() const noexcept;
+        bool is_pulling_block() const noexcept;
         bool is_in_motion() const noexcept;
+
+        template <class T>
+        bool state_is() const noexcept
+        {
+                return Utils::variant_matches<T>(state_);
+        }
 
         bool is_facing_left() const noexcept;
         bool is_facing_right() const noexcept;
 
-        void run_left() noexcept;
-        void run_right() noexcept;
+        void grab_nearest_block(Blocks& blocks) noexcept;
+        void move_left() noexcept;
+        void move_right() noexcept;
         void stand_still() noexcept;
         Engine::Gameplay::Timed_callback jump() noexcept;
       
@@ -66,26 +89,28 @@ public:
         Direction direction() const noexcept;
         State state() const noexcept;
         Engine::Complex_number position() const noexcept;
+        Engine::Gameplay::Checkbox checkbox() const noexcept;
 
 private:
         Engine::Gameplay::Timed_callback stand_still_after(Engine::Duration::Frames duration);
-        Engine::Gameplay::Checkbox checkbox() const noexcept; // This could be public, doesn't matter right now
         bool can_be_translated(Engine::Complex_number delta,
                                Engine::Gameplay::Checkboxes_thunks const& solid_checkboxes_thunks) const noexcept;
         void translate_if_possible(Engine::Complex_number delta,
                                    Engine::Gameplay::Checkboxes_thunks const& solid_checkboxes_thunks) noexcept;
+        void run_in_direction(Direction direction) noexcept;
 
         Engine::Complex_number position_;
         Actions_durations durations_;
         int width_;
         int height_;
         Direction direction_ = Direction::none;
-        State state_ = State::standing_still;
+        State state_ = Standing_still();
         double speed_ = 0;
 };
 
-// Terrible function name
-void register_mike_keyboard_controls(Mike& mike, Engine::Gameplay::Signals& signals);
+// Doesn't matter if `register_mike_keyboard_controls` sucks now,
+// the whole `Key_binding` mechanism will be more generalized later
+void register_mike_keyboard_controls(Mike& mike, Blocks& blocks, Engine::Gameplay::Signals& signals);
 bool user_has_control(Mike const& mike);
 
 }

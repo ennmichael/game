@@ -49,7 +49,7 @@ private:
 
 struct Animated_sprite {
 public:
-        static Animated_sprite load(Sdl::Renderer& renderer,
+        static Animated_sprite load(Sdl::Renderer& renderer, // TODO Remove this function
                                     std::string const& base_path,
                                     std::string const& image_extension="png",
                                     std::string const& config_extension="sheet.config");

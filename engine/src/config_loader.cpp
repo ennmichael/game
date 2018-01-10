@@ -4,6 +4,7 @@
 #include <utility>
 
 using namespace std::string_literals;
+using namespace std::string_view_literals;
 
 namespace Engine {
 
@@ -18,15 +19,11 @@ std::ifstream open_file(std::string const& path)
 }
 
 std::string_view trim(std::string_view str, 
-                      std::string_view whitespace = " \f\n\r\t\v") noexcept
+                      std::string_view whitespace = " \f\n\r\t\v"sv) noexcept
 {
         auto const from = str.find_first_not_of(whitespace);
-        
-        if (from == 0)
-            return str;
-            
-        auto const to = str.find_last_not_of(whitespace, from + 1);
-        return str.substr(from, to + 1);
+        auto const to = str.find_last_not_of(whitespace);
+        return str.substr(from, to - from + 1);
 }
 
 } // Close unnamed namespace
@@ -47,11 +44,6 @@ Nonexistent_config_value::Nonexistent_config_value(std::string const& path,
 Nonexistent_config_file::Nonexistent_config_file(std::string const& path)
         : runtime_error("Error: config file '"s + path + "' doesn't exist."s)
 {}
-
-Config Config::load(std::string const& path)
-{
-        return Config(path);
-}
 
 Config::Config(std::string const& path)
         : path_(path)
@@ -85,7 +77,7 @@ Config::Config(std::string const& path)
                         continue;
 
                 auto const [name, value] = parse_line(trim(line));
-                values_[std::string(name)] = value;
+                values_.insert_or_assign(std::string(name), std::string(value));
         }
 }
 

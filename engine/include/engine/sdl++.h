@@ -15,6 +15,7 @@ namespace Engine::Sdl {
 using Keycode = SDL_Keycode;
 
 namespace Keycodes {
+        auto constexpr e = SDLK_e;
         auto constexpr a = SDLK_a;
         auto constexpr d = SDLK_d;
         auto constexpr w = SDLK_w;
@@ -24,18 +25,15 @@ namespace Keycodes {
         auto constexpr space = SDLK_SPACE;
 };
 
-class Window_deleter {
-public:
+struct Window_deleter {
         void operator()(SDL_Window* window) const noexcept;
 };
 
-class Renderer_deleter {
-public:
+struct Renderer_deleter {
         void operator()(SDL_Renderer* renderer) const noexcept;
 };
 
-class Texture_deleter {
-public:
+struct Texture_deleter {
         void operator()(SDL_Texture* texture) const noexcept;
 };
 

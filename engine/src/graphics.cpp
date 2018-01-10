@@ -106,7 +106,7 @@ Animated_sprite Animated_sprite::load(Sdl::Renderer& renderer,
         auto const image_path = base_path + "."s + image_extension;
         auto const config_path = base_path + "."s + config_extension;
 
-        auto const sprite_config = Config::load(config_path);
+        Config const sprite_config(config_path);
         auto const frame_count = sprite_config.value<int>("frame_count"s);
         auto const frame_delay = sprite_config.value<int>("frame_delay"s);
 

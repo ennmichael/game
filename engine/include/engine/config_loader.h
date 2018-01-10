@@ -14,13 +14,11 @@ class Conversion_failed : public std::exception {};
 template <class T>
 T convert_string(std::string str)
 {
-        // TODO Converting a double to an int passes without an exception, which is bad
-
         T result;
         std::stringstream stream(str);
         stream >> result;
         
-        if (stream.fail())
+        if (stream.fail() || !stream.eof())
                 throw Conversion_failed();
 
         return result;
@@ -50,8 +48,6 @@ public:
 
 class Config {
 public:
-        static Config load(std::string const& path);
-
         explicit Config(std::string const& path);
 
         template <class T>

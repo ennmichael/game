@@ -1,37 +1,19 @@
 #pragma once
 
 #include "engine/gameplay.h"
+#include <vector>
 
 namespace Game::Logic {
 
-class Block {
-public:
-        enum class Flags {
-                none = 0,
-                solid = 1,
-                movable = 2
-        };
-
-        Block(Engine::Complex_number position,
-              Flags flags,
-              int width,
-              int height) noexcept;
-
-        bool is_solid() const noexcept;
-        bool is_movable() const noexcept;
-
-        Engine::Complex_number position() const noexcept;
+struct Block {
         Engine::Gameplay::Checkbox checkbox() const noexcept;
 
-private:
-        Engine::Complex_number position_;
-        Flags flags_;
-        int width_;
-        int height_;
+        Engine::Complex_number position;
+        int width;
+        int height;
 };
 
-Block::Flags operator&(Block::Flags f1, Block::Flags f2) noexcept;
-Block::Flags operator|(Block::Flags f1, Block::Flags f2) noexcept;
+using Blocks = std::vector<Block>;
 
 }
 

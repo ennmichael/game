@@ -17,6 +17,29 @@
 using namespace std::string_literals;
 using namespace std::complex_literals;
 
+// TODO *_sprite and *_texture classes should take positions as parameters when rendering,
+// which means Block_texture is a redundant class.
+// If we don't do it this way, we end up with circular references.
+
+struct General_configuration { // TODO Start using this
+        static General_configuration load(std::string const& path)
+        {
+                Engine::Config const config(path);
+
+                return {
+                        config.value<int>("fps"s),
+                        Engine::Complex_number(config.value<double>("player_x"s),
+                                               config.value<double>("player_y"s)),
+                        Engine::Complex_number(config.value<double>("block_x"s),
+                                               config.value<double>("block_y"s))
+                };
+        }
+
+        int fps;
+        Engine::Complex_number player_position;
+        Engine::Complex_number block_position;
+};
+
 int main()
 {
         Engine::Sdl::Manager manager;
@@ -32,26 +55,31 @@ int main()
                                mike_sprites.at("standing_still"s).frame_height()); // TODO These interfaces should take `dimensions` objects
         Game::Graphics::Mike_sprite mike_sprite(mike_sprites, mike);
 
-        Engine::Sdl::Unique_texture block_texture = Engine::Sdl::load_texture(*renderer, "../res/sprites/block.png"s);
+        Engine::Sdl::Unique_texture block_texture = Engine::Sdl::load_texture(*renderer, "../res/sprites/block.png"s); 
 
-        Engine::Gameplay::Signals signals;
-        Game::Logic::register_mike_keyboard_controls(mike, signals);
-
-        Game::Logic::Block block(10.0 + 100.0i,
-                                 Game::Logic::Block::Flags::solid | Game::Logic::Block::Flags::movable,
-                                 Engine::Sdl::texture_width(*block_texture),
-                                 Engine::Sdl::texture_height(*block_texture));
+        Game::Logic::Blocks blocks {
+                {
+                        10.0 + 100.0i,
+                        Engine::Sdl::texture_width(*block_texture),
+                        Engine::Sdl::texture_height(*block_texture)
+                }
+        };
 
         Engine::Gameplay::Checkboxes_thunks solid_checkboxes_thunks {
-                [&block] { return block.checkbox(); }
+                [&blocks] { return blocks[0].checkbox(); }
         };
+
+        Engine::Gameplay::Signals signals;
+        Game::Logic::register_mike_keyboard_controls(mike, blocks, signals);
 
         auto const on_frame_advance =
         [&](Engine::Gameplay::Main_loop&, Engine::Gameplay::Keyboard const&)
         {
+                std::cout << mike.state().index() << '\n';
+
                 Engine::Sdl::render_clear(*renderer);
                 mike.update_position(solid_checkboxes_thunks);
-                Engine::Sdl::render_copy(*renderer, *block_texture, block.position());
+                Engine::Sdl::render_copy(*renderer, *block_texture, blocks[0].position);
                 mike_sprite.render(*renderer);
                 mike_sprite.update();
                 Engine::Sdl::render_present(*renderer);

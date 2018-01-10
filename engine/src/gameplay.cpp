@@ -187,10 +187,10 @@ Sdl::Rect Checkbox::to_rect() const noexcept
 }
 
 bool Checkbox::can_be_translated(Complex_number delta,
-                                 Checkboxes_thunks const& checkboxes) const noexcept
+                                 Checkboxes_thunks const& checkboxes_thunks) const noexcept
 {
         auto const translated_checkbox = translated(delta);
-        return !translated_checkbox.collides_with_any(checkboxes);
+        return !translated_checkbox.collides_with_any(checkboxes_thunks);
 }
 
 bool Checkbox::collides_with(Checkbox checkbox) const noexcept
@@ -198,12 +198,13 @@ bool Checkbox::collides_with(Checkbox checkbox) const noexcept
         return Sdl::has_intersection(to_rect(), checkbox.to_rect());
 }
 
-bool Checkbox::collides_with_any(Checkboxes_thunks const& checkboxes) const noexcept
+bool Checkbox::collides_with_any(Checkboxes_thunks const& checkboxes_thunks) const noexcept
 {
-        return std::any_of(checkboxes.cbegin(), checkboxes.cend(),
-                [this](Checkbox_thunk checkbox)
+        return std::any_of(checkboxes_thunks.cbegin(), checkboxes_thunks.cend(),
+                [this](Checkbox_thunk thunk)
                 {
-                        return collides_with(checkbox());
+                        auto const checkbox = thunk();
+                        return collides_with(checkbox);
                 }
         );
 }
@@ -215,6 +216,12 @@ Checkbox Checkbox::translated(Complex_number delta) const noexcept
                 width,
                 height
         };
+}
+
+Complex_number center_position(Checkbox checkbox) noexcept
+{
+        return checkbox.position + Complex_number(checkbox.width / 2,
+                                                  checkbox.height / 2);
 }
 
 }

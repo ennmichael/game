@@ -1,5 +1,7 @@
 #include "mike_sprite.h"
+#include "utils.h"
 #include <cassert>
+#include <variant>
 
 using namespace std::string_literals;
 
@@ -7,9 +9,9 @@ namespace Game::Graphics {
 
 Engine::Graphics::Animated_sprites load_mike_sprites(Engine::Sdl::Renderer& renderer)
 {
-        // TODO Load sprites lazily
-        // TODO In production, we'll load the entire sprites texture right away,
-        // and then load the individual configs lazily
+        // In production, we'll load the entire sprites texture right away,
+        // and then load the individual configs lazily. Lazily loading the configs helps
+        // because then I don't have to repeat any code.
 
         Engine::Graphics::Animated_sprites sprites;
 
@@ -44,20 +46,37 @@ void Mike_sprite::update()
 
 Engine::Graphics::Animated_sprite& Mike_sprite::current_sprite() noexcept
 {
-        switch (mike_->state()) {
-                case Logic::Mike::State::standing_still: return sprites_->at("standing_still"s);
-                case Logic::Mike::State::running: return sprites_->at("running");
-                case Logic::Mike::State::jumping_in_place: return sprites_->at("jumping_in_place"s);
-                case Logic::Mike::State::preparing_to_jump_sideways: return sprites_->at("preparing_to_jump_sideways"s);
-                case Logic::Mike::State::jumping_sideways: return sprites_->at("jumping_sideways"s);
-                case Logic::Mike::State::landing_sideways: return sprites_->at("landing_sideways"s);
-                case Logic::Mike::State::climbing: return sprites_->at("climbing"s);
-                case Logic::Mike::State::pulling: return sprites_->at("pulling"s);
-                case Logic::Mike::State::pushing: return sprites_->at("pushing"s);
-        }
+        return Utils::lambda_visit(mike_->state(),
+                [this](Logic::Mike::Standing_still const&) noexcept -> Engine::Graphics::Animated_sprite&
+                { return sprites_->at("standing_still"s); },
 
-        assert(false);
-        return sprites_->at("standing_still"s);
+                [this](Logic::Mike::Running const&) noexcept -> Engine::Graphics::Animated_sprite&
+                { return sprites_->at("running"s); },
+                
+                [this](Logic::Mike::Jumping_in_place const&) -> Engine::Graphics::Animated_sprite&
+                { return sprites_->at("jumping_in_place"s); },
+                
+                [this](Logic::Mike::Preparing_to_jump_sideways const&) noexcept -> Engine::Graphics::Animated_sprite&
+                { return sprites_->at("preparing_to_jump_sideways"s); },
+                
+                [this](Logic::Mike::Jumping_sideways const&) noexcept -> Engine::Graphics::Animated_sprite&
+                { return sprites_->at("jumping_sideways"s); },
+                
+                [this](Logic::Mike::Landing_sideways const&) noexcept -> Engine::Graphics::Animated_sprite&
+                { return sprites_->at("landing_sideways"s); },
+                
+                [this](Logic::Mike::Climbing const&) noexcept -> Engine::Graphics::Animated_sprite&
+                { return sprites_->at("climbing"s); },
+                
+                [this](Logic::Mike::Holding_block const&) noexcept -> Engine::Graphics::Animated_sprite&
+                { return sprites_->at("running"s); }, // TODO This is incorrect
+
+                [this](Logic::Mike::Pulling_block const&) noexcept -> Engine::Graphics::Animated_sprite&
+                { return sprites_->at("pulling"s); },
+                
+                [this](Logic::Mike::Pushing_block const&) noexcept -> Engine::Graphics::Animated_sprite&
+                { return sprites_->at("pushing"s); }
+        );
 }
 
 Engine::Sdl::Flip Mike_sprite::current_flip() const noexcept
