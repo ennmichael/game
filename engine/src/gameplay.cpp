@@ -8,6 +8,13 @@
 #include <iterator>
 #include <algorithm>
 
+
+
+
+
+
+#include <iostream> // TODO Remove me
+
 namespace Engine::Gameplay {
 
 Timer::Timer(Duration::Milliseconds duration) noexcept
@@ -158,20 +165,32 @@ void Main_loop::start(Signals const& signals, int fps)
         }
 }
 
+Direction opposite_direction(Direction direction) noexcept
+{
+        switch (direction) {
+                case Direction::none:  return Direction::none;
+                case Direction::right: return Direction::left;
+                case Direction::left:  return Direction::right;
+        }
+
+        assert(false);
+        return Direction::none;
+}
+
 void Main_loop::register_callback(Timed_callback const& callback)
 {
         callbacks_.push_back(callback);
 }
 
-Checkboxes_thunks close_checkboxes(Checkboxes_thunks const& checkboxes,
-                                   Complex_number pivot,
-                                   double minimum_distance)
+Const_checkboxes_pointers close_checkboxes(Const_checkboxes_pointers const& checkboxes,
+                                     Complex_number pivot,
+                                     double minimum_distance)
 {
         return Utils::filter(checkboxes,
-                [pivot, minimum_distance](Checkbox_thunk checkbox)
+                [pivot, minimum_distance](Checkbox const* checkbox)
                 {
-                        auto const distance = Utils::distance(checkbox().position, pivot);
-                        return distance <= minimum_distance;
+                        auto const d = distance(*checkbox, pivot);
+                        return d <= minimum_distance;
                 }
         );
 }
@@ -187,10 +206,18 @@ Sdl::Rect Checkbox::to_rect() const noexcept
 }
 
 bool Checkbox::can_be_translated(Complex_number delta,
-                                 Checkboxes_thunks const& checkboxes_thunks) const noexcept
+                                 Const_checkboxes_pointers const& solid_checkboxes) const noexcept
 {
         auto const translated_checkbox = translated(delta);
-        return !translated_checkbox.collides_with_any(checkboxes_thunks);
+        return !translated_checkbox.collides_with_any(solid_checkboxes);
+}
+
+bool Checkbox::can_be_translated(Direction direction,
+                                 double delta,
+                                 Const_checkboxes_pointers const& solid_checkboxes) const noexcept
+{
+        auto const translated_checkbox = translated(direction, delta);
+        return !translated_checkbox.collides_with_any(solid_checkboxes);
 }
 
 bool Checkbox::collides_with(Checkbox checkbox) const noexcept
@@ -198,13 +225,16 @@ bool Checkbox::collides_with(Checkbox checkbox) const noexcept
         return Sdl::has_intersection(to_rect(), checkbox.to_rect());
 }
 
-bool Checkbox::collides_with_any(Checkboxes_thunks const& checkboxes_thunks) const noexcept
+bool Checkbox::collides_with_any(Const_checkboxes_pointers const& checkboxes) const noexcept
 {
-        return std::any_of(checkboxes_thunks.cbegin(), checkboxes_thunks.cend(),
-                [this](Checkbox_thunk thunk)
+        return std::any_of(checkboxes.cbegin(), checkboxes.cend(),
+                [this](Checkbox const* checkbox) noexcept
                 {
-                        auto const checkbox = thunk();
-                        return collides_with(checkbox);
+                        std::cout << (checkbox == this) << '\n';
+                        std::cout << collides_with(*checkbox) << '\n';
+                        if (checkbox == this)
+                                return false;
+                        return collides_with(*checkbox);
                 }
         );
 }
@@ -218,10 +248,45 @@ Checkbox Checkbox::translated(Complex_number delta) const noexcept
         };
 }
 
+Checkbox Checkbox::translated(Direction direction, double delta) const noexcept
+{
+        return {
+                translated_position(position, direction, delta),
+                width,
+                height
+        };
+}
+
+bool operator==(Checkbox x, Checkbox y) noexcept
+{
+        return x.position == y.position &&
+               x.width == y.width &&
+               x.height == y.height;
+}
+
+bool operator!=(Checkbox x, Checkbox y) noexcept
+{
+        return !(x == y);
+}
+
 Complex_number center_position(Checkbox checkbox) noexcept
 {
         return checkbox.position + Complex_number(checkbox.width / 2,
                                                   checkbox.height / 2);
+}
+
+Complex_number translated_position(Complex_number position,
+                                   Direction direction,
+                                   double delta) noexcept
+{
+        switch (direction) {
+                case Direction::none:  return position;
+                case Direction::right: return position + delta;
+                case Direction::left:  return position - delta;
+        }
+
+        assert(false);
+        return Complex_number();
 }
 
 }

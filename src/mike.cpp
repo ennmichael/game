@@ -74,64 +74,88 @@ bool Mike::is_pulling_block() const noexcept
         return state_is<Pulling_block>();
 }
 
-bool Mike::is_in_motion() const noexcept
-{
-        return is_jumping_sideways() || is_running();
-}
-
 bool Mike::is_facing_left() const noexcept
 {
-        return direction_ == Direction::left;
+        return direction_ == Engine::Gameplay::Direction::left;
 }
 
 bool Mike::is_facing_right() const noexcept
 {
-        return direction_ == Direction::right;
+        return direction_ == Engine::Gameplay::Direction::right;
 }
 
-void Mike::grab_nearest_block(Blocks& blocks) noexcept
+void Mike::snap_to(Engine::Gameplay::Checkbox checkbox) noexcept
 {
-        auto const closest_block =
-        [this](Blocks& blocks) noexcept
+        auto const new_real =
+        [this](Engine::Gameplay::Checkbox checkbox) noexcept
         {
-                return std::min_element(blocks.begin(), blocks.end(),
-                        [this](Block b1, Block b2)
+                return (position_.real() > checkbox.position.real()) ?
+                        checkbox.position.real() + checkbox.width :
+                        checkbox.position.real() - width_;
+        };
+
+        position_.real(new_real(checkbox));
+}
+
+void Mike::hold_nearest_block(Blocks& blocks) noexcept
+{
+        Utils::lambda_visit(state_,
+                [](Holding_block) noexcept
+                {},
+
+                [this](Pushing_block pushing_block) noexcept
+                { state_ = Holding_block {pushing_block.block}; },
+
+                [this](Pulling_block pulling_block) noexcept
+                { state_ = Holding_block {pulling_block.block}; },
+
+                [this, &blocks](auto const&) noexcept
+                {
+                        auto const closest_block =
+                        [this](Blocks& blocks) noexcept
                         {
-                                auto const d1 = Engine::Utils::distance(b1, *this);
-                                auto const d2 = Engine::Utils::distance(b2, *this);
-                                return d1 < d2;
+                                return std::min_element(blocks.begin(), blocks.end(),
+                                        [this](Block b1, Block b2)
+                                        {
+                                                auto const d1 = Engine::distance(b1, *this);
+                                                auto const d2 = Engine::distance(b2, *this);
+                                                return d1 < d2;
+                                        }
+                                );
+                        };
+
+                        auto const block_is_close_enough =
+                        [this](Block block)
+                        {
+                                auto const distance = Engine::distance(Engine::Gameplay::center_position(block),
+                                                                       Engine::Gameplay::center_position(*this));
+
+                                return distance <=  3*width_ / 5 + block.width/2 + 10;
+                        };
+
+                        auto const block = closest_block(blocks);
+                        if (block != blocks.cend() && block_is_close_enough(*block)) {
+                                turn_to(*block);
+                                snap_to(*block);
+                                state_ = Holding_block {&(*block)};
                         }
-                );
-        };
-
-        auto const block_is_close_enough =
-        [this](Block block)
-        {
-                auto const distance = Engine::Utils::distance(Engine::Gameplay::center_position(block),
-                                                              Engine::Gameplay::center_position(*this));
-
-                return distance < width_ + block.width/2;
-        };
-
-        auto const block = closest_block(blocks);
-        if (block != blocks.cend() && block_is_close_enough(*block))
-                state_ = Holding_block {block};
-
+                }
+        );
 }
 
 void Mike::move_left() noexcept
 {
-        run_in_direction(Direction::left); 
+        move_in_direction(Engine::Gameplay::Direction::left);
 }
 
 void Mike::move_right() noexcept
 {
-        run_in_direction(Direction::right);
+        move_in_direction(Engine::Gameplay::Direction::right);
 }
 
 void Mike::stand_still() noexcept
 {
-        direction_ = Direction::none;
+        direction_ = Engine::Gameplay::Direction::none;
         state_ = Standing_still();
 }
 
@@ -172,22 +196,80 @@ Engine::Gameplay::Timed_callback Mike::jump() noexcept
                 return jump_sideways();
 }
 
-void Mike::update_position(Engine::Gameplay::Checkboxes_thunks const& solid_checkboxes_thunks) noexcept
+void Mike::update_position(Engine::Gameplay::Const_checkboxes_pointers const& solid_checkboxes) noexcept
 {
-        auto const move_forward =
-        [this](Engine::Gameplay::Checkboxes_thunks solid_checkboxes_thunks)
+        auto const can_be_translated =
+        [this](Engine::Gameplay::Direction direction,
+               Engine::Gameplay::Const_checkboxes_pointers const& solid_checkboxes) noexcept
         {
-                if (is_facing_left())
-                        translate_if_possible(-speed_, solid_checkboxes_thunks);
-                else if (is_facing_right())
-                        translate_if_possible(speed_, solid_checkboxes_thunks);
+                return checkbox().can_be_translated(direction, speed_, solid_checkboxes);
         };
 
-        if (is_in_motion())
-                move_forward(solid_checkboxes_thunks);
+        auto const translate =
+        [this](Engine::Gameplay::Direction direction) noexcept
+        {
+                position_ = Engine::Gameplay::translated_position(position_,
+                                                                  direction,
+                                                                  speed_);
+        };
+
+        auto const pull_block =
+        [this, can_be_translated, translate](
+                Block& block,
+                Engine::Gameplay::Const_checkboxes_pointers const& solid_checkboxes) noexcept
+        {
+                auto const opposite_direction = Engine::Gameplay::opposite_direction(direction_);
+                if (can_be_translated(opposite_direction, solid_checkboxes)) {
+                        translate(opposite_direction);
+                        block = block.translated(opposite_direction, speed_);
+                }
+        };
+
+        auto const push_block =
+        [this, translate](Block& block,
+                          Engine::Gameplay::Const_checkboxes_pointers const& solid_checkboxes) noexcept
+        {
+                if (block.can_be_translated(direction_, speed_, solid_checkboxes)) {
+                        translate(direction_);
+                        block = block.translated(direction_, speed_);
+                }
+        };
+
+        auto translate_if_possible =
+        [this, can_be_translated, translate](
+                Engine::Gameplay::Const_checkboxes_pointers const& solid_checkboxes) noexcept
+        {
+                if (can_be_translated(direction_, solid_checkboxes))
+                        translate(direction_);
+        };
+
+        Utils::lambda_visit(state_,
+                [pull_block, &solid_checkboxes](Pulling_block pulling_block) noexcept
+                {
+                        pull_block(*pulling_block.block, solid_checkboxes);
+                },
+
+                [push_block, &solid_checkboxes](Pushing_block pushing_block) noexcept
+                {
+                        push_block(*pushing_block.block, solid_checkboxes);
+                },
+
+                [translate_if_possible, &solid_checkboxes](Running) noexcept
+                {
+                        translate_if_possible(solid_checkboxes);
+                },
+
+                [translate_if_possible, &solid_checkboxes](Jumping_sideways) noexcept
+                {
+                        translate_if_possible(solid_checkboxes);
+                },
+
+                [](auto const&)
+                {}
+        );
 }
 
-Direction Mike::direction() const noexcept
+Engine::Gameplay::Direction Mike::direction() const noexcept
 {
         return direction_;
 }
@@ -219,29 +301,27 @@ Engine::Gameplay::Checkbox Mike::checkbox() const noexcept
         };
 }
 
-bool Mike::can_be_translated(Engine::Complex_number delta,
-                             Engine::Gameplay::Checkboxes_thunks const& solid_checkboxes_thunks) const noexcept
+void Mike::move_in_direction(Engine::Gameplay::Direction direction) noexcept
 {
-        return checkbox().can_be_translated(delta, solid_checkboxes_thunks);
-}
-
-void Mike::translate_if_possible(Engine::Complex_number delta,
-                                 Engine::Gameplay::Checkboxes_thunks const& solid_checkboxes_thunks) noexcept
-{
-        if (can_be_translated(delta, solid_checkboxes_thunks))
-                position_ += delta;
-}
-
-void Mike::run_in_direction(Direction direction) noexcept
-{
+        auto const push_or_pull =
+        [this](Block* block, Engine::Gameplay::Direction direction)
+        {
+                if (direction_ == direction)
+                        state_ = Pushing_block {block};
+                else
+                        state_ = Pulling_block {block};
+        };
+        
         Utils::lambda_visit(state_,
-                [this, direction](Holding_block holding_block) noexcept
-                {
-                        if (direction_ == direction)
-                                state_ = Pushing_block {holding_block.block};
-                        else
-                                state_ = Pulling_block {holding_block.block};
-                },
+                [push_or_pull, direction](Holding_block holding_block) noexcept
+                { push_or_pull(holding_block.block, direction); },
+
+                [push_or_pull, direction](Pushing_block pushing_block) noexcept
+                { push_or_pull(pushing_block.block, direction); },
+
+                [push_or_pull, direction](Pulling_block pulling_block) noexcept
+                { push_or_pull(pulling_block.block, direction); },
+
                 [this, direction](auto const&) noexcept
                 {
                         direction_ = direction;
@@ -252,106 +332,46 @@ void Mike::run_in_direction(Direction direction) noexcept
 
 void register_mike_keyboard_controls(Mike& mike, Blocks& blocks, Engine::Gameplay::Signals& signals)
 {
-        struct Key_binding { // We could use function pointers here, if that matters
-                std::function<bool(Engine::Gameplay::Keyboard const&)> checker;
-                std::function<void(Engine::Gameplay::Main_loop&)> callback;
-        };
-
-        std::vector key_bindings {
-                Key_binding {
-                        [](Engine::Gameplay::Keyboard const& keyboard) noexcept
-                        {
-                                return keyboard.key_down(Engine::Sdl::Keycodes::a) ||
-                                       keyboard.key_down(Engine::Sdl::Keycodes::left);
-                        },
-                        [&](Engine::Gameplay::Main_loop&)
-                        {
-                                mike.move_left();
-                        }
-                },
-                Key_binding {
-                        [](Engine::Gameplay::Keyboard const& keyboard) noexcept
-                        {
-                                return keyboard.key_down(Engine::Sdl::Keycodes::d) ||
-                                       keyboard.key_down(Engine::Sdl::Keycodes::right);
-                        },
-                        [&](Engine::Gameplay::Main_loop&)
-                        {
-                                mike.move_right();
-                        }
-                },
-                Key_binding {
-                        [](Engine::Gameplay::Keyboard const& keyboard) noexcept
-                        {
-                                return keyboard.key_pressed(Engine::Sdl::Keycodes::w) ||
-                                       keyboard.key_pressed(Engine::Sdl::Keycodes::up) ||
-                                       keyboard.key_pressed(Engine::Sdl::Keycodes::space);
-                        },
-                        [&](Engine::Gameplay::Main_loop& main_loop)
-                        {
-                                main_loop.register_callback(mike.jump());
-                        }
-                },
-                Key_binding {
-                        [](Engine::Gameplay::Keyboard const& keyboard) noexcept
-                        {
-                                return keyboard.key_pressed(Engine::Sdl::Keycodes::e);
-                        },
-                        [&](Engine::Gameplay::Main_loop&)
-                        {
-                                mike.grab_nearest_block(blocks);
-                        }
-                }
+        auto const user_has_control =
+        [](Mike const& mike) noexcept {
+                return mike.is_standing_still() ||
+                       mike.is_running() ||
+                       mike.is_holding_block() ||
+                       mike.is_pushing_block() ||
+                       mike.is_pulling_block();
         };
 
         auto const on_frame_advance =
-        [&mike, key_bindings](Engine::Gameplay::Main_loop& main_loop,
-                              Engine::Gameplay::Keyboard const& keyboard)
+        [&mike, &blocks, user_has_control](Engine::Gameplay::Main_loop& main_loop,
+                                           Engine::Gameplay::Keyboard const& keyboard)
         {
                 // TODO Ditch the `user_has_control` bullshit here and keep it internalized within `Mike`
-
-                auto const receiving_input =
-                [](std::vector<Key_binding> const& key_bindings,
-                   Engine::Gameplay::Keyboard const& keyboard)
-                {
-                        return std::any_of(key_bindings.cbegin(), key_bindings.cend(),
-                                [&](Key_binding key_binding)
-                                {
-                                        return key_binding.checker(keyboard);
-                                }
-                        );
-                };
-
-                auto const dispatch_key_binding =
-                [](Key_binding const& key_binding,
-                   Engine::Gameplay::Keyboard const& keyboard,
-                   Engine::Gameplay::Main_loop& main_loop)
-                {
-                        if (key_binding.checker(keyboard))
-                                key_binding.callback(main_loop);
-                };
-
                 if (!user_has_control(mike))
                         return;
 
-                if (receiving_input(key_bindings, keyboard)) {
-                        for (auto const& key_binding : key_bindings)
-                                dispatch_key_binding(key_binding, keyboard, main_loop);
-                } else {
+                if (keyboard.key_down(Engine::Sdl::Keycodes::e))
+                        mike.hold_nearest_block(blocks);
+                else
                         mike.stand_still();
+
+                if (keyboard.key_down(Engine::Sdl::Keycodes::a) ||
+                    keyboard.key_down(Engine::Sdl::Keycodes::left)) {
+                        mike.move_left();
                 }
+
+                if (keyboard.key_down(Engine::Sdl::Keycodes::d) ||
+                    keyboard.key_down(Engine::Sdl::Keycodes::right)) {
+                        mike.move_right();
+                }
+
+                if (keyboard.key_down(Engine::Sdl::Keycodes::space) ||
+                    keyboard.key_down(Engine::Sdl::Keycodes::up) ||
+                    keyboard.key_down(Engine::Sdl::Keycodes::w)) {
+                        main_loop.register_callback(mike.jump());
+                } 
         };
 
         signals.frame_advance.connect(on_frame_advance);
-}
-
-bool user_has_control(Mike const& mike)
-{
-        return mike.is_standing_still() ||
-               mike.is_running() ||
-               mike.is_holding_block() ||
-               mike.is_pushing_block() ||
-               mike.is_pulling_block();
 }
 
 }

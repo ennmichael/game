@@ -65,9 +65,7 @@ int main()
                 }
         };
 
-        Engine::Gameplay::Checkboxes_thunks solid_checkboxes_thunks {
-                [&blocks] { return blocks[0].checkbox(); }
-        };
+        Engine::Gameplay::Const_checkboxes_pointers solid_checkboxes { &blocks[0] };
 
         Engine::Gameplay::Signals signals;
         Game::Logic::register_mike_keyboard_controls(mike, blocks, signals);
@@ -75,10 +73,11 @@ int main()
         auto const on_frame_advance =
         [&](Engine::Gameplay::Main_loop&, Engine::Gameplay::Keyboard const&)
         {
-                std::cout << mike.state().index() << '\n';
+                // std::cout << mike.state().index() << '\n';
+                std::cout << mike.position() << '\n';
 
                 Engine::Sdl::render_clear(*renderer);
-                mike.update_position(solid_checkboxes_thunks);
+                mike.update_position(solid_checkboxes);
                 Engine::Sdl::render_copy(*renderer, *block_texture, blocks[0].position);
                 mike_sprite.render(*renderer);
                 mike_sprite.update();

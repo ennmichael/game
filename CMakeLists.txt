@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.1.0)
 
 project(game)
-add_executable(game src/main.cpp src/mike.cpp src/mike_sprite.cpp src/block.cpp)
+add_executable(game src/main.cpp src/mike.cpp src/mike_sprite.cpp)
 
 target_include_directories(game PRIVATE "${game_SOURCE_DIR}/include/game")
 
@@ -9,7 +9,6 @@ macro(add_compile_options target)
         target_compile_options(${target} PRIVATE "-Wall")
         target_compile_options(${target} PRIVATE "-Wextra")
         target_compile_options(${target} PRIVATE "-std=c++17")
-        target_compile_options(${target} PRIVATE "-O0")
 endmacro()
 
 add_compile_options(game)

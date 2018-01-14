@@ -85,27 +85,42 @@ private:
         std::vector<Timed_callback> callbacks_;
 };
 
+enum class Direction {
+        none,
+        right,
+        left
+};
+
+Direction opposite_direction(Direction direction) noexcept;
+
 struct Checkbox;
 
-using Checkbox_thunk = std::function<Checkbox()>;
-using Checkboxes_thunks = std::vector<Checkbox_thunk>;
+using Const_checkboxes_pointers = std::vector<Checkbox const*>;
+using Checkboxes_pointers = std::vector<Checkbox*>;
 
-Checkboxes_thunks close_checkboxes(Checkboxes_thunks const& checkboxes,
-                                   Complex_number pivot,
-                                   double minimum_distance);
+Const_checkboxes_pointers close_checkboxes(Checkboxes_pointers const& checkboxes,
+                                     Complex_number pivot,
+                                     double minimum_distance);
 
 struct Checkbox {
         Sdl::Rect to_rect() const noexcept;
         bool can_be_translated(Complex_number delta,
-                               Checkboxes_thunks const& solid_checkboxes_thunks) const noexcept;
+                               Const_checkboxes_pointers const& solid_checkboxes) const noexcept;
+        bool can_be_translated(Engine::Gameplay::Direction direction,
+                               double delta,
+                               Const_checkboxes_pointers const& solid_checkboxes) const noexcept;
         bool collides_with(Checkbox checkbox) const noexcept;
-        bool collides_with_any(Checkboxes_thunks const& checkboxes_thunks) const noexcept;
+        bool collides_with_any(Const_checkboxes_pointers const& checkboxes) const noexcept;
         Checkbox translated(Complex_number delta) const noexcept;
+        Checkbox translated(Direction direction, double delta) const noexcept;
 
         Complex_number position;
         int width;
         int height;
 };
+
+bool operator==(Checkbox x, Checkbox y) noexcept;
+bool operator!=(Checkbox x, Checkbox y) noexcept;
 
 Engine::Complex_number center_position(Checkbox checkbox) noexcept;
 
@@ -114,6 +129,10 @@ Engine::Complex_number center_position(T const& obj) noexcept(noexcept(obj.check
 {
         return center_position(obj.checkbox());
 }
+
+Complex_number translated_position(Complex_number position,
+                                   Direction direction,
+                                   double delta) noexcept;
 
 }
 
