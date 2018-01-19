@@ -102,6 +102,9 @@ Const_checkboxes_pointers close_checkboxes(Checkboxes_pointers const& checkboxes
                                      Complex_number pivot,
                                      double minimum_distance);
 
+// TODO Try doing using Checkbox = Sdl::Rect.
+// There's the `Engine::Gamplay::position` function to return the position as a complex number.
+
 struct Checkbox {
         Sdl::Rect to_rect() const noexcept;
         bool can_be_translated(Complex_number delta,
@@ -110,7 +113,6 @@ struct Checkbox {
                                double delta,
                                Const_checkboxes_pointers const& solid_checkboxes) const noexcept;
         bool collides_with(Checkbox checkbox) const noexcept;
-        bool collides_with_any(Const_checkboxes_pointers const& checkboxes) const noexcept;
         Checkbox translated(Complex_number delta) const noexcept;
         Checkbox translated(Direction direction, double delta) const noexcept;
 

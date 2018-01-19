@@ -21,6 +21,8 @@ using namespace std::complex_literals;
 // which means Block_texture is a redundant class.
 // If we don't do it this way, we end up with circular references.
 
+// TODO Always take `Dimension`s objects in interfaces, or provide two overloads
+
 struct General_configuration { // TODO Start using this
         static General_configuration load(std::string const& path)
         {
@@ -49,7 +51,7 @@ int main()
         auto renderer = Engine::Sdl::create_renderer(*window);
 
         Engine::Graphics::Animated_sprites mike_sprites = Game::Graphics::load_mike_sprites(*renderer);
-        Game::Logic::Mike mike(300.0 + 150.0i,
+        Game::Logic::Mike mike(200.0 + 150.0i,
                                Engine::Graphics::animations_durations(mike_sprites),
                                mike_sprites.at("standing_still"s).frame_width(),
                                mike_sprites.at("standing_still"s).frame_height()); // TODO These interfaces should take `dimensions` objects
@@ -59,13 +61,18 @@ int main()
 
         Game::Logic::Blocks blocks {
                 {
-                        10.0 + 100.0i,
+                        0.0 + 100.0i,
+                        Engine::Sdl::texture_width(*block_texture),
+                        Engine::Sdl::texture_height(*block_texture)
+                },
+                {
+                        400.0 + 100.0i,
                         Engine::Sdl::texture_width(*block_texture),
                         Engine::Sdl::texture_height(*block_texture)
                 }
         };
 
-        Engine::Gameplay::Const_checkboxes_pointers solid_checkboxes { &blocks[0] };
+        Engine::Gameplay::Const_checkboxes_pointers solid_checkboxes { &blocks[0], &blocks[1] };
 
         Engine::Gameplay::Signals signals;
         Game::Logic::register_mike_keyboard_controls(mike, blocks, signals);
@@ -79,6 +86,7 @@ int main()
                 Engine::Sdl::render_clear(*renderer);
                 mike.update_position(solid_checkboxes);
                 Engine::Sdl::render_copy(*renderer, *block_texture, blocks[0].position);
+                Engine::Sdl::render_copy(*renderer, *block_texture, blocks[1].position);
                 mike_sprite.render(*renderer);
                 mike_sprite.update();
                 Engine::Sdl::render_present(*renderer);

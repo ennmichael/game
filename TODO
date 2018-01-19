@@ -1,0 +1,3 @@
+Make it so that Mike grabs the block based on which direction he's facing if two blocks are equally distant.
+Make it so that Mike can push multiple blocks at the same time, getting slower with each next block.
+

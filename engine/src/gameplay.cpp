@@ -208,35 +208,49 @@ Sdl::Rect Checkbox::to_rect() const noexcept
 bool Checkbox::can_be_translated(Complex_number delta,
                                  Const_checkboxes_pointers const& solid_checkboxes) const noexcept
 {
+        auto const collision_happened =
+        [](Checkbox const& c1, Checkbox const& c2) noexcept
+        { 
+                return Sdl::has_intersection(c1.to_rect(), c2.to_rect());
+        };
+
+        auto const collides_with_any =
+        [this, collision_happened](Checkbox translated_checkbox,
+                                   Const_checkboxes_pointers const& solid_checkboxes) noexcept
+        {
+                return std::any_of(solid_checkboxes.cbegin(), solid_checkboxes.cend(),
+                        [&](Checkbox const* checkbox)
+                        {
+                                std::cout << (this == checkbox) << '\n';
+                                std::cout << collision_happened(translated_checkbox, *checkbox) << '\n';
+
+                                if (this == checkbox)
+                                        return false;
+                                return collision_happened(translated_checkbox, *checkbox);
+                        }
+                );
+        };
+
         auto const translated_checkbox = translated(delta);
-        return !translated_checkbox.collides_with_any(solid_checkboxes);
+        return !collides_with_any(translated_checkbox, solid_checkboxes); 
 }
 
 bool Checkbox::can_be_translated(Direction direction,
                                  double delta,
                                  Const_checkboxes_pointers const& solid_checkboxes) const noexcept
 {
-        auto const translated_checkbox = translated(direction, delta);
-        return !translated_checkbox.collides_with_any(solid_checkboxes);
+        if (direction == Direction::none)
+                return true;
+        
+        auto const complex_delta = (direction == Direction::right) ?
+                Complex_number(delta, 0) : Complex_number(-delta, 0);
+
+        return can_be_translated(complex_delta, solid_checkboxes);
 }
 
 bool Checkbox::collides_with(Checkbox checkbox) const noexcept
 {
         return Sdl::has_intersection(to_rect(), checkbox.to_rect());
-}
-
-bool Checkbox::collides_with_any(Const_checkboxes_pointers const& checkboxes) const noexcept
-{
-        return std::any_of(checkboxes.cbegin(), checkboxes.cend(),
-                [this](Checkbox const* checkbox) noexcept
-                {
-                        std::cout << (checkbox == this) << '\n';
-                        std::cout << collides_with(*checkbox) << '\n';
-                        if (checkbox == this)
-                                return false;
-                        return collides_with(*checkbox);
-                }
-        );
 }
 
 Checkbox Checkbox::translated(Complex_number delta) const noexcept
