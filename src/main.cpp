@@ -54,7 +54,7 @@ int main()
         Game::Logic::Mike mike(200.0 + 150.0i,
                                Engine::Graphics::animations_durations(mike_sprites),
                                mike_sprites.at("standing_still"s).frame_width(),
-                               mike_sprites.at("standing_still"s).frame_height()); // TODO These interfaces should take `dimensions` objects
+                               mike_sprites.at("standing_still"s).frame_height()); // TODO These interfaces should take `dimensions` objects, or be overloaded
         Game::Graphics::Mike_sprite mike_sprite(mike_sprites, mike);
 
         Engine::Sdl::Unique_texture block_texture = Engine::Sdl::load_texture(*renderer, "../res/sprites/block.png"s); 
