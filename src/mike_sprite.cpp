@@ -21,8 +21,8 @@ Engine::Graphics::Animated_sprites load_mike_sprites(Engine::Sdl::Renderer& rend
         Engine::Graphics::load_animated_sprite(sprites, renderer, "../res/sprites/jumping_sideways"s);
         Engine::Graphics::load_animated_sprite(sprites, renderer, "../res/sprites/jumping_in_place"s);
         Engine::Graphics::load_animated_sprite(sprites, renderer, "../res/sprites/landing_sideways"s);
-        Engine::Graphics::load_animated_sprite(sprites, renderer, "../res/sprites/pulling");
-        Engine::Graphics::load_animated_sprite(sprites, renderer, "../res/sprites/pushing");
+        Engine::Graphics::load_animated_sprite(sprites, renderer, "../res/sprites/pulling"s);
+        Engine::Graphics::load_animated_sprite(sprites, renderer, "../res/sprites/pushing"s);
 
         return sprites;
 }
@@ -42,41 +42,6 @@ void Mike_sprite::render(Engine::Sdl::Renderer& renderer)
 void Mike_sprite::update()
 {
         current_sprite().update();
-}
-
-Engine::Graphics::Animated_sprite& Mike_sprite::current_sprite() noexcept
-{
-        return Utils::lambda_visit(mike_->state(),
-                [this](Logic::Mike::Standing_still const&) noexcept -> Engine::Graphics::Animated_sprite&
-                { return sprites_->at("standing_still"s); },
-
-                [this](Logic::Mike::Running const&) noexcept -> Engine::Graphics::Animated_sprite&
-                { return sprites_->at("running"s); },
-                
-                [this](Logic::Mike::Jumping_in_place const&) -> Engine::Graphics::Animated_sprite&
-                { return sprites_->at("jumping_in_place"s); },
-                
-                [this](Logic::Mike::Preparing_to_jump_sideways const&) noexcept -> Engine::Graphics::Animated_sprite&
-                { return sprites_->at("preparing_to_jump_sideways"s); },
-                
-                [this](Logic::Mike::Jumping_sideways const&) noexcept -> Engine::Graphics::Animated_sprite&
-                { return sprites_->at("jumping_sideways"s); },
-                
-                [this](Logic::Mike::Landing_sideways const&) noexcept -> Engine::Graphics::Animated_sprite&
-                { return sprites_->at("landing_sideways"s); },
-                
-                [this](Logic::Mike::Climbing const&) noexcept -> Engine::Graphics::Animated_sprite&
-                { return sprites_->at("climbing"s); },
-                
-                [this](Logic::Mike::Holding_block const&) noexcept -> Engine::Graphics::Animated_sprite&
-                { return sprites_->at("running"s); }, // TODO This is incorrect
-
-                [this](Logic::Mike::Pulling_block const&) noexcept -> Engine::Graphics::Animated_sprite&
-                { return sprites_->at("pulling"s); },
-                
-                [this](Logic::Mike::Pushing_block const&) noexcept -> Engine::Graphics::Animated_sprite&
-                { return sprites_->at("pushing"s); }
-        );
 }
 
 Engine::Sdl::Flip Mike_sprite::current_flip() const noexcept

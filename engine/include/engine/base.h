@@ -28,7 +28,13 @@ auto position(T const& obj) noexcept(noexcept(obj.position())) -> decltype(obj.p
 template <class T, class U>
 auto distance(T const& obj1, U const& obj2) noexcept
 {
-        return std::abs(position(obj1) - position(obj2));
+        auto const pos1 = position(obj1);
+        auto const pos2 = position(obj2);
+
+        return std::sqrt(
+                  std::pow(pos1.real() - pos2.real(), 2)
+                + std::pow(pos1.imag() - pos2.imag(), 2)
+        );
 }
 
 namespace Duration {

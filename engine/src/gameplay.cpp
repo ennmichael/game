@@ -8,13 +8,6 @@
 #include <iterator>
 #include <algorithm>
 
-
-
-
-
-
-#include <iostream> // TODO Remove me
-
 namespace Engine::Gameplay {
 
 Timer::Timer(Duration::Milliseconds duration) noexcept
@@ -35,6 +28,16 @@ void Timer::restart() noexcept
 Timer Timer::restarted() const noexcept
 {
         return Timer(duration_);
+}
+
+bool Timed_callback::ready() const noexcept
+{
+        return timer_.ready();
+}
+
+void Timed_callback::update_timer() noexcept
+{
+        timer_.update();
 }
 
 Frame_timer::Frame_timer(Duration::Frames duration) noexcept
@@ -60,16 +63,6 @@ void Frame_timer::restart() noexcept
 Frame_timer Frame_timer::restarted() const noexcept
 {
         return Frame_timer(duration_);
-}
-
-bool Timed_callback::ready() const noexcept
-{
-        return timer_.ready();
-}
-
-void Timed_callback::update_timer() noexcept
-{
-        timer_.update();
 }
 
 std::optional<Timed_callback> Timed_callback::execute()
@@ -221,9 +214,6 @@ bool Checkbox::can_be_translated(Complex_number delta,
                 return std::any_of(solid_checkboxes.cbegin(), solid_checkboxes.cend(),
                         [&](Checkbox const* checkbox)
                         {
-                                std::cout << (this == checkbox) << '\n';
-                                std::cout << collision_happened(translated_checkbox, *checkbox) << '\n';
-
                                 if (this == checkbox)
                                         return false;
                                 return collision_happened(translated_checkbox, *checkbox);

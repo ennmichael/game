@@ -4,27 +4,40 @@
 #include <string>
 #include <stdexcept>
 #include <sstream>
+#include <utility>
+#include <type_traits>
 
 namespace Engine {
 
+class String_conversion_failed;
+
 namespace {
 
-class Conversion_failed : public std::exception {};
-
-template <class T>
-T convert_string(std::string str)
+template <class T, class Underlying>
+T convert_string_impl(std::string const& str)
 {
-        T result;
+        Underlying result;
         std::stringstream stream(str);
         stream >> result;
         
         if (stream.fail() || !stream.eof())
-                throw Conversion_failed();
+                throw String_conversion_failed();
 
-        return result;
+        return T {result};
 }
 
-} // Close unnamed namespace
+}
+
+class String_conversion_failed : public std::exception {};
+
+template <class T>
+T convert_string(std::string const& str)
+{
+        if constexpr (std::is_enum_v<T>)
+                return convert_string_impl<T, std::underlying_type_t<T>>(str);
+        else
+                return convert_string_impl<T, T>(str);
+}
 
 class Bad_config_syntax : public std::runtime_error {
 public:
@@ -58,7 +71,7 @@ public:
                         return convert_string<T>(value);
                 } catch (std::out_of_range const&) {
                         throw Nonexistent_config_value(path_, name);
-                } catch (Conversion_failed const&) {
+                } catch (String_conversion_failed const&) {
                         throw Bad_config_value(path_, name);
                 }
         }

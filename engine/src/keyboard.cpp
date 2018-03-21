@@ -53,10 +53,5 @@ Key_state Keyboard::key_state(Sdl::Keycode keycode) const noexcept
         }
 }
 
-bool is_keyboard_event(Sdl::Event const& event) noexcept
-{
-        return event.type == SDL_KEYDOWN || event.type == SDL_KEYUP;
-}
-
 }
 

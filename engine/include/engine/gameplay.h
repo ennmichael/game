@@ -15,8 +15,6 @@
 
 namespace Engine::Gameplay {
 
-class Main_loop;
-
 class Timer {
 public:
         explicit Timer(Duration::Milliseconds duration) noexcept;

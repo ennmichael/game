@@ -75,16 +75,13 @@ int main()
         Engine::Gameplay::Const_checkboxes_pointers solid_checkboxes { &blocks[0], &blocks[1] };
 
         Engine::Gameplay::Signals signals;
-        Game::Logic::register_mike_keyboard_controls(mike, blocks, signals);
 
         auto const on_frame_advance =
         [&](Engine::Gameplay::Main_loop&, Engine::Gameplay::Keyboard const&)
         {
-                // std::cout << mike.state().index() << '\n';
                 std::cout << mike.position() << '\n';
 
                 Engine::Sdl::render_clear(*renderer);
-                mike.update_position(solid_checkboxes);
                 Engine::Sdl::render_copy(*renderer, *block_texture, blocks[0].position);
                 Engine::Sdl::render_copy(*renderer, *block_texture, blocks[1].position);
                 mike_sprite.render(*renderer);

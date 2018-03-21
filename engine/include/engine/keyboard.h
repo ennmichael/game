@@ -26,7 +26,5 @@ private:
         Key_states key_states_;
 };
 
-bool is_keyboard_event(Sdl::Event const& event) noexcept;
-
 }
 
