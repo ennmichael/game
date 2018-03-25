@@ -8,29 +8,35 @@ using namespace std::string_literals;
 
 namespace Engine::Graphics {
 
-Sprite_sheet Sprite_sheet::load(Sdl::Renderer& renderer,
-                                std::string const& image_path,
-                                std::string const& config_path)
+Sprite_sheet::Sprite::Sprite(Sprite_sheet& sprite_sheet,
+                             Sdl::Rect source) noexcept
+        : sprite_sheet_(sprite_sheet)
+        , source_(source)
+{}
+
+void Sprite_sheet::Sprite::render(Sdl::Renderer& renderer,
+                                  Complex_number position,
+                                  Sdl::Flip flip)
 {
-        Config const config(config_path);
-
-        auto const frame_delay = config.value<Duration::Milliseconds>("frame_delay"s);
-        auto const frame_count = config.value<int>("frame_count"s);
-
-        return Sprite_sheet(Sdl::load_texture(renderer, image_path),
-                            frame_delay,
-                            frame_count);
+        auto const dst = Sdl::make_rect(Sdl::Dimensions(source_), position);
+        sprite_sheet_.render(renderer, source_, dst, flip);
 }
 
-Sprite_sheet::Sprite_sheet(Sdl::Unique_texture texture,
-                           Duration::Milliseconds frame_delay,
-                           int frame_count)
+Sprite_sheet::Sprite_sheet(Sdl::Unique_texture texture)
         : texture_(std::move(texture))
+{}
+
+Sprite_sheet::Animation::Animation(Sprite_sheet& sprite_sheet,
+                                        Sdl::Rect first_frame_source,
+                                        Duration::Milliseconds frame_delay,
+                                        int frame_count) noexcept
+        : sprite_sheet_(sprite_sheet)
+        , source_(first_frame_source)
         , timer_(frame_delay)
         , frame_count_(frame_count)
 {}
 
-void Sprite_sheet::update() noexcept
+void Sprite_sheet::Animation::update() noexcept
 {
         if (timer_.ready())
                 ++current_frame_;
@@ -39,34 +45,30 @@ void Sprite_sheet::update() noexcept
                 current_frame_ = 0;
 }
 
-void Sprite_sheet::render_current_frame(Engine::Sdl::Renderer& renderer,
-                                             Engine::Complex_number position,
-                                             Engine::Sdl::Flip flip)
+void Sprite_sheet::Animation::render(Sdl::Renderer& renderer,
+                                     Complex_number position,
+                                     Sdl::Flip flip)
+{
+        auto const dst = make_rect(Sdl::Dimensions(source_), position);
+        sprite_sheet_.render(renderer, source_, dst, flip);
+}
+
+Sprite Sprite_sheet::sprite(Sdl::Rect source) noexcept
+{
+        return Sprite(*this, source);
+}
+
+void Sprite_sheet::render(Sdl::Renderer& renderer,
+                          Sdl::Rect source,
+                          Sdl::Rect destination,
+                          Sdl::Flip flip)
 {
         Sdl::render_copy(renderer,
                          *texture_,
-                         source_rect(),
-                         destination_rect(position),
+                         source,
+                         destination,
                          0,
                          flip);
-}
-
-Sdl::Rect Sprite_sheet::source_rect() const noexcept
-{
-        return {
-                current_frame_ * frame_width_, 0,
-                frame_width_, frame_height_
-        };
-}
-
-Sdl::Rect Sprite_sheet::destination_rect(Engine::Complex_number position) const noexcept
-{
-        return {
-                static_cast<int>(position.real()),
-                static_cast<int>(position.imag()),
-                frame_width_,
-                frame_height_
-        };
 }
 
 }

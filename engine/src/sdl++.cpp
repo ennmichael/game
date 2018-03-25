@@ -104,21 +104,9 @@ void render_copy(Renderer& renderer,
                  double angle,
                  Flip flip)
 {
-        auto const [width, height] = texture_dimensions(texture);
-
-        Rect const src {
-                0,
-                0,
-                width,
-                height
-        };
-
-        Rect const dst {
-                static_cast<int>(position.real()),
-                static_cast<int>(position.imag()),
-                width,
-                height
-        };
+        Dimensions texture_dimensions(texture);
+        auto const src = make_rect(texture_dimensions, Complex_number(0, 0));
+        auto const dst = make_rect(texture_dimensions, position);
 
         render_copy(renderer, texture, src, dst, angle, flip);
 }
@@ -138,11 +126,29 @@ bool has_intersection(Rect r1, Rect r2) noexcept
         return SDL_HasIntersection(&r1, &r2);
 }
 
-Dimensions texture_dimensions(Texture& texture)
+Dimensions::Dimensions(Rect rect) noexcept
+        : width(rect.w)
+        , height(rect.h)
+{}
+
+Dimensions::Dimensions(int width, int height)
+        : width(width)
+        , height(height)
+{}
+
+Dimensions::Dimensions(Texture& texture)
+        : width(texture_width(texture))
+        , height(texture_height(texture))
+{}
+
+Rect make_rect(Dimensions dimensions, Complex_number position) noexcept
 {
+        auto const [w, h] = dimensions;
+
         return {
-                texture_width(texture),
-                texture_height(texture)
+                static_cast<int>(position.real()),
+                static_cast<int>(position.imag()),
+                w, h
         };
 }
 

@@ -13,17 +13,17 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${engine_SOURCE_DIR}/cmake")
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
 
-if (${SDL2_FOUND} STREQUAL FALSE)
-        message(FATAL_ERROR "SDL2 not found.")
+if (SDL2_FOUND)
+        target_include_directories(engine PRIVATE ${SDL2_INCLUDE_DIR})
+        target_link_libraries(engine PRIVATE ${SDL2_LIBRARY})
+else()
+        message(WARNING "SDL2 not found.")
 endif()
 
-if (${SDL2_IMAGE_FOUND} STREQUAL FALSE)
-        message(FATAL_ERROR "SDL2_image not found.")
+if (SDL2_IMAGE_FOUND)
+        target_include_directories(engine PRIVATE ${SDL2_IMAGE_INCLUDE_DIR})
+        target_link_libraries(engine PRIVATE ${SDL2_IMAGE_LIBRARIES})
+else()
+        message(WARNING "SDL2_image not found.")
 endif()
-
-target_include_directories(engine PRIVATE ${SDL2_INCLUDE_DIR})
-target_include_directories(engine PRIVATE ${SDL2_IMAGE_INCLUDE_DIR})
-
-target_link_libraries(engine PRIVATE ${SDL2_LIBRARY})
-target_link_libraries(engine PRIVATE ${SDL2_IMAGE_LIBRARIES})
 
