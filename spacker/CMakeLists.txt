@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.1.0)
 
 project(spacker)
-add_executable(spacker src/main.cpp)
+add_executable(spacker src/main.cpp src/spacker.cpp)
 
 find_package(PNG)
 
@@ -12,4 +12,5 @@ else()
 endif()
 
 add_compile_options(spacker)
+target_include_directories(spacker PRIVATE include/spacker)
 

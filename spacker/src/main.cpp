@@ -1,54 +1,40 @@
-// These two cancerous defines exist so that png_io.hpp works properly.
-// See also https://github.com/ignf/gilviewer/issues/8.
-#define png_infopp_NULL (png_infopp)NULL
-#define int_p_NULL (int*)NULL
+#include "spacker.h"
+#include "utils.h"
+#include "boost/range/irange.hpp"
+#include "boost/range/adaptors.hpp"
 
-#define BOOST_GIL_USE_CONCEPT_CHECK
+// TODO Rename *.hpp -> *.h
 
-#include "boost/gil/gil_all.hpp"
-#include "boost/gil/extension/io/png_io.hpp"
-#include <iostream>
+/**
+ * NOTE:
+ * As spacker is being written, the sprite database currently contains
+ * files that seem to be of approximately the same height, and this has
+ * very much influenced the design of the packing algorithm.
+ * The algorithm prefers stacking the sprites horizontally.
+ */
+
+namespace {
 
 namespace gil = boost::gil;
 
-template <class SrcView, class MutableDstView, class Point>
-void paint_over(SrcView const& src,
-                MutableDstView const& dst,
-                Point position)
+auto parameters_vector(int argc, char** argv)
 {
-        auto const paint_row =
-        [&](auto const row)
-        {
-                auto const src_start = src.row_begin(row);
-                auto const src_end = src_start + src.width();
-                auto const dst_iter = dst.x_at(position.x, position.y + row);
-                std::copy(src_start, src_end, dst_iter);
-        };
-
-        for (int row = 0; row < src.height(); ++row)
-                paint_row(row);
+        return Spacker::Utils::range_to_vector(
+                boost::irange(1, argc)
+              | boost::adaptors::transformed([&](auto const i) -> char const*
+                                             { return argv[i]; }));
 }
 
-gil::rgba8_image_t read_png(std::string const& filename)
-{
-        // TODO Using strictly gil::rgba8_image_t here might lead to
-        // portability issues if we change our sprite format.
-        // I should fix this to use any_image<...>
-
-        gil::rgba8_image_t result;
-        gil::png_read_image(filename, result);
-        return result;
 }
 
-int main()
+int main(int argc, char **argv)
 {
-        auto const img = read_png("/home/haskellcurry/test.png");
-        gil::rgba8_image_t output(500, 500);
-        auto const output_view = gil::view(output);
-        gil::rgba8_pixel_t red_pixel(255, 0, 0, 255);
-        std::fill(output_view.begin(), output_view.end(), red_pixel);
-        gil::point2 position(50, 50);
-        paint_over(gil::const_view(img), output_view, position);
-        gil::png_write_view("test-out.png", output_view);
+        if (argc == 1)
+                return 0;
+
+        auto const parameters = parameters_vector(argc, argv);
+        auto const sprites = Spacker::load_images(parameters);
+        auto const sprite_sheet = Spacker::SpriteSheet::pack(sprites);
+        sprite_sheet.write_to("./out");
 }
 
