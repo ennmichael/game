@@ -13,13 +13,17 @@ public:
 
         void render(Engine::Sdl::Renderer& renderer);
         void update();
+        void switch_animation();
 
 private:
+        static current_mike_animation(Sprite_sheet& sprite_sheet, Logic::Mike const& mike);
+
         Engine::Graphics::Animation& current_animation() noexcept;
         Engine::Sdl::Flip current_flip() const noexcept;
 
-        Engine::Graphics::Sprite_sheet* sprite_sheet_;
+        Engine::Gtaphics::Sprite_sheet* sprite_sheet_;
         Logic::Mike const* mike_;
+        Engine::Graphics::Animation current_animation_;
 };
 
 }

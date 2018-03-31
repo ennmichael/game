@@ -3,8 +3,8 @@
 #include "engine/engine.h"
 #include "block.h"
 #include "utils.h"
+#include "boost/optional.hpp"
 #include <unordered_map>
-#include <optional>
 #include <functional>
 
 namespace Game::Logic {
@@ -17,7 +17,7 @@ namespace Game::Logic {
 class Mike {
 public:
         struct State;
-        using Optional_state = std::optional<State>;
+        using Optional_state = boost::optional<State>;
 
         struct State {
                 using Updater = std::function<
@@ -35,8 +35,7 @@ public:
 
         Mike(Engine::Complex_number position,
              Actions_durations const& durations,
-             int width,
-             int height) noexcept;
+             Engine::Sdl::Dimensions dimensions) noexcept;
 
         bool is_facing_left() const noexcept;
         bool is_facing_right() const noexcept;
@@ -56,6 +55,8 @@ public:
         Engine::Complex_number position() const noexcept;
         Engine::Gameplay::Checkbox checkbox() const noexcept;
 
+        std::string const& current_sprite_name() const noexcept;
+
 private:
         template <class Entity>
         void turn_to(Entity const& entity) noexcept(noexcept(Engine::position(entity)))
@@ -72,8 +73,7 @@ private:
 
         Engine::Complex_number position_;
         Actions_durations durations_;
-        int width_;
-        int height_;
+        Engine::Sdl::Dimensions dimensions_;
         Engine::Gameplay::Direction direction_ = Engine::Gameplay::Direction::none;
         State state_ = idle();
         double speed_ = 0;

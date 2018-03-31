@@ -86,6 +86,11 @@ void render_copy(Renderer& renderer,
                  double angle=0,
                  Flip flip=Flip::none);
 
+void render_copy(Renderer& renderer,
+                 Texture& texture,
+                 Rect source,
+                 Rect destination);
+
 Unique_texture load_texture(Renderer& renderer, std::string path);
 
 bool has_intersection(Rect r1, Rect r2) noexcept;
@@ -99,8 +104,12 @@ struct Dimensions {
         int height;
 };
 
-Rect make_rect(Dimensions dimension, Complex_number position) noexcept;
+bool operator==(Dimensions d1, Dimensions d2) noexcept;
+bool operator!=(Dimensions d1, Dimensions d2) noexcept;
 
+Rect make_rect(Complex_number position, Dimensions dimensions) noexcept;
+
+Dimensions texture_dimensions(Texture& texture);
 int texture_width(Texture& texture);
 int texture_height(Texture& texture);
 

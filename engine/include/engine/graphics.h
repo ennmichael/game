@@ -8,12 +8,6 @@
 #include <unordered_map>
 #include <string>
 
-/**
- * TODO Consider if the `Timer` should be extracted and shared between the gameplay and 
- * graphics modules. Currently, it's in the gameplay module, but that makes graphics
- * dependent on gameplay.
- */
-
 namespace Engine::Graphics {
 
 namespace Detail {
@@ -38,7 +32,7 @@ public:
         public:
                 Animation(Raw_sprite_sheet& sheet,
                           Sdl::Rect first_frame_source,
-                          Duration::Milliseconds frame_delay,
+                          Duration::Frames frame_delay,
                           int frame_count) noexcept;
 
                 void render(Sdl::Renderer&,
@@ -46,10 +40,12 @@ public:
                             Sdl::Flip flip=Sdl::Flip::none);
                 void update() noexcept;
 
+                Sdl::Dimensions frame_dimensions() const noexcept;
+
         private:
                 Raw_sprite_sheet* sprite_sheet_;
                 Sdl::Rect source_;
-                Gameplay::Timer timer_;
+                Gameplay::Frame_timer timer_;
                 int frame_count_;
                 int current_frame_ = 0;
         };
@@ -58,7 +54,7 @@ public:
 
         Sprite sprite(Sdl::Rect source) noexcept;
         Animation animation(Sdl::Rect first_frame_source,
-                            Duration::Milliseconds frame_delay,
+                            Duration::Frames frame_delay,
                             int frame_count) noexcept;
 
 private:
@@ -72,38 +68,45 @@ private:
 
 } // Close namespace Detail
 
+struct Animation_properties {
+        Duration::Frames animation_duration() const noexcept;
+
+        int frame_count;
+        Duration::Frames frame_delay;
+};
+
+using Sprite_sheet_config = std::unordered_map<std::string, Sdl::Rect>;
+
+Sprite_sheet_config load_sprite_sheet_config(std::string const& json_path);
+
+using Animations_config = std::unordered_map<std::string, Animation_properties>;
+using Animations_durations = std::unordered_map<std::string, Duration::Frames>;
+
+Animations_config load_animations_config(std::string const& json_path);
+Animations_durations animations_durations(Animations_config const& animations_config);
+
 class Sprite_sheet {
 public:
         using Sprite = Detail::Raw_sprite_sheet::Sprite;
         using Animation = Detail::Raw_sprite_sheet::Animation;
 
+        Sprite_sheet(Sdl::Unique_texture texture,
+                     Sprite_sheet_config sprite_sheet_config,
+                     Animations_config animations_config);
         Sprite_sheet(Sdl::Renderer& renderer,
                      std::string const& image_path,
-                     std::string const& sprite_sheet_json_path,
-                     std::string const& animations_json_path);
-        Sprite_sheet(Sdl::Unique_texture texture,
-                     std::string const& sprite_sheet_json_path,
-                     std::string const& animations_json_path);
-        Sprite_sheet(Sdl::Unique_texture texture,
-                     boost::property_tree::ptree sprie_sheet_tree,
-                     boost::property_tree::ptree animations_tree);
+                     Sprite_sheet_config sprite_sheet_config,
+                     Animations_config animations_config);
 
-        Sprite sprite(std::string const& name) noexcept;
-        Animation animation(std::string const& name) noexcept;
+        Sprite sprite(std::string const& name);
+        Animation animation(std::string const& name);
 
 private:
-        struct Animation_frame_properties {
-                int frame_count;
-                Duration::Milliseconds frame_delay;
-        };
-
-        Sdl::Rect sprite_source_rect(std::string const& name) const;
         Sdl::Rect animation_first_rect(std::string const& name, int frame_count) const;
-        Animation_frame_properties animation_frame_properties(std::string const& name) const;
 
         Detail::Raw_sprite_sheet sprite_sheet_;
-        boost::property_tree::ptree sprite_sheet_tree_;
-        boost::property_tree::ptree animations_tree_;
+        Sprite_sheet_config sprite_sheet_config_;
+        Animations_config animations_config_;
 };
 
 using Sprite = Sprite_sheet::Sprite;

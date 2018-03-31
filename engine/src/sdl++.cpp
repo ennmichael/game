@@ -100,13 +100,21 @@ void render_copy(Renderer& renderer,
 
 void render_copy(Renderer& renderer,
                  Texture& texture,
+                 Rect source,
+                 Rect destination)
+{
+        render_copy(renderer, texture, source, destination, 0, Flip::none);
+}
+
+void render_copy(Renderer& renderer,
+                 Texture& texture,
                  Complex_number position,
                  double angle,
                  Flip flip)
 {
         Dimensions texture_dimensions(texture);
-        auto const src = make_rect(texture_dimensions, Complex_number(0, 0));
-        auto const dst = make_rect(texture_dimensions, position);
+        auto const src = make_rect(Complex_number(0, 0), texture_dimensions);
+        auto const dst = make_rect(position, texture_dimensions);
 
         render_copy(renderer, texture, src, dst, angle, flip);
 }
@@ -141,7 +149,18 @@ Dimensions::Dimensions(Texture& texture)
         , height(texture_height(texture))
 {}
 
-Rect make_rect(Dimensions dimensions, Complex_number position) noexcept
+bool operator==(Dimensions d1, Dimensions d2) noexcept
+{
+        return d1.width == d2.width &&
+               d1.height == d2.height;
+}
+
+bool operator!=(Dimensions d1, Dimensions d2) noexcept
+{
+        return !(d1 == d2);
+}
+
+Rect make_rect(Complex_number position, Dimensions dimensions) noexcept
 {
         auto const [w, h] = dimensions;
 
@@ -166,6 +185,12 @@ int texture_height(Texture& texture)
         if (SDL_QueryTexture(&texture, nullptr, nullptr, nullptr, &height) < 0)
                 throw Error();
         return height;
+}
+
+Dimensions texture_dimensions(Texture& texture)
+{
+        return Dimensions(texture_width(texture),
+                          texture_height(texture));
 }
 
 Duration::Milliseconds get_ticks() noexcept

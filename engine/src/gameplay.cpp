@@ -190,17 +190,14 @@ Const_checkboxes_pointers close_checkboxes(Const_checkboxes_pointers const& chec
 
 Sdl::Rect Checkbox::to_rect() const noexcept
 {
-        return {
-                static_cast<int>(position.real()),
-                static_cast<int>(position.imag()),
-                width,
-                height
-        };
+        return Sdl::make_rect(position, dimensions);
 }
 
 bool Checkbox::can_be_translated(Complex_number delta,
                                  Const_checkboxes_pointers const& solid_checkboxes) const noexcept
 {
+        // TODO These can be elevated into an unnamed namespace
+
         auto const collision_happened =
         [](Checkbox const& c1, Checkbox const& c2) noexcept
         { 
@@ -247,8 +244,7 @@ Checkbox Checkbox::translated(Complex_number delta) const noexcept
 {
         return {
                 position + delta,
-                width,
-                height
+                dimensions
         };
 }
 
@@ -256,16 +252,14 @@ Checkbox Checkbox::translated(Direction direction, double delta) const noexcept
 {
         return {
                 translated_position(position, direction, delta),
-                width,
-                height
+                dimensions
         };
 }
 
-bool operator==(Checkbox x, Checkbox y) noexcept
+bool operator==(Checkbox c1, Checkbox c2) noexcept
 {
-        return x.position == y.position &&
-               x.width == y.width &&
-               x.height == y.height;
+        return c1.position == c2.position &&
+               c1.dimensions == c2.dimensions;
 }
 
 bool operator!=(Checkbox x, Checkbox y) noexcept
@@ -275,8 +269,8 @@ bool operator!=(Checkbox x, Checkbox y) noexcept
 
 Complex_number center_position(Checkbox checkbox) noexcept
 {
-        return checkbox.position + Complex_number(checkbox.width / 2,
-                                                  checkbox.height / 2);
+        return checkbox.position + Complex_number(checkbox.dimensions.width / 2,
+                                                  checkbox.dimensions.height / 2);
 }
 
 Complex_number translated_position(Complex_number position,

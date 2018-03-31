@@ -8,40 +8,38 @@ namespace Game::Logic {
 
 Mike::Mike(Engine::Complex_number position,
            Actions_durations const& durations,
-           int width,
-           int height) noexcept
+           Engine::Sdl::Dimensions dimensions) noexcept
         : position_(position)
         , durations_(durations)
-        , width_(width)
-        , height_(height)
+        , dimensions_(dimensions)
 {
-        Engine::Config const config("../res/mike.config"s);
-        config.unpack_value("speed"s, speed_);
 }
 
-auto Mike::idle() -> State {
+auto Mike::idle() -> State
+{
         return {
                 [](Mike&, Engine::Gameplay::Keyboard const& keyboard) -> Optional_state {
                         if (keyboard.key_down(Engine::Sdl::Keycodes::left) ||
                             keyboard.key_down(Engine::Sdl::Keycodes::right))
                                 return running();
-                        return std::nullopt;
+                        return boost::none;
                 },
                 "idle"s
         };
 }
 
-auto Mike::running() -> State {
+auto Mike::running() -> State
+{
         return {
                 [](Mike& mike, Engine::Gameplay::Keyboard const& keyboard) -> Optional_state {
                         if (keyboard.key_down(Engine::Sdl::Keycodes::left)) {
                                 mike.move_left();
-                                return std::nullopt;
+                                return boost::none;
                         }
 
                         if (keyboard.key_down(Engine::Sdl::Keycodes::right)) {
                                 mike.move_right();
-                                return std::nullopt;
+                                return boost::none;
                         }
 
                         return idle();
@@ -66,8 +64,8 @@ void Mike::snap_to(Engine::Gameplay::Checkbox checkbox) noexcept
         [this](Engine::Gameplay::Checkbox checkbox) noexcept
         {
                 return (position_.real() > checkbox.position.real()) ?
-                        checkbox.position.real() + checkbox.width :
-                        checkbox.position.real() - width_;
+                        checkbox.position.real() + checkbox.dimensions.width :
+                        checkbox.position.real() - dimensions_.width;
         };
 
         position_.real(new_real(checkbox));
@@ -97,8 +95,7 @@ Engine::Gameplay::Checkbox Mike::checkbox() const noexcept
 {
         return {
                 position_,
-                width_,
-                height_
+                dimensions_
         };
 }
 

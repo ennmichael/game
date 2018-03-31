@@ -69,6 +69,11 @@ void execute_ready_callbacks(Timed_callbacks& callbacks);
 
 class Main_loop;
 
+/**
+ * TODO Should we have more elaborate keyboard signaling?
+ * For example, keyboard change, key press, key release signals?
+ * In that case, frame_advance callbacks won't need to take a Keyboard parameter.
+ */
 struct Signals {
         boost::signals2::signal<void(Main_loop&, Keyboard const&)> frame_advance;
         boost::signals2::signal<void()> quit;
@@ -115,8 +120,7 @@ struct Checkbox {
         Checkbox translated(Direction direction, double delta) const noexcept;
 
         Complex_number position;
-        int width;
-        int height;
+        Sdl::Dimensions dimensions;
 };
 
 bool operator==(Checkbox x, Checkbox y) noexcept;
