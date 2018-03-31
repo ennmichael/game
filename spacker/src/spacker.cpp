@@ -20,8 +20,6 @@ namespace Spacker {
 
 namespace {
 
-using Point = boost::gil::point2<int>;
-
 template <class NamedImages>
 auto const views(NamedImages const& images)
 {
@@ -107,73 +105,78 @@ std::vector<Sprite> load_sprites(std::vector<std::string> const& paths)
 
 SpriteSheet SpriteSheet::pack(std::vector<Sprite> const& sprites)
 {
-        struct PositionedSprite : Sprite {
-                Point position;
+        auto const positioned_sprites = position_sprites(sprites);
+        return SpriteSheet(sheet_image(positioned_sprites),
+                           property_tree(positioned_sprites));
+}
+
+auto SpriteSheet::position_sprites(std::vector<Sprite> const& sprites) -> std::vector<PositionedSprite>
+{
+        std::vector<PositionedSprite> result;
+        int x = 0;
+
+        for (auto const& sprite : sprites) {
+                result.push_back(PositionedSprite {
+                        sprite,
+                        Point(x, 0)});
+                x += sprite.const_view().width();
+        }
+
+        return result;
+}
+
+boost::property_tree::ptree SpriteSheet::property_tree(std::vector<PositionedSprite> const& sprites)
+{
+        auto const sprite_properties =
+        [](auto const& sprite)
+        {
+                boost::property_tree::ptree properties;
+                properties.put("x", sprite.position.x);
+                properties.put("y", sprite.position.y);
+                properties.put("width", sprite.width());
+                properties.put("height", sprite.height());
+                return properties;
         };
+        
+        boost::property_tree::ptree tree;
 
-        // TODO We probably want to switch from using IIFEs to private member functions
+        for (auto const& sprite : sprites)
+                tree.add_child(sprite.name, sprite_properties(sprite));
 
-        auto const positioned_sprites =
-        [&]
-        {
-                std::vector<PositionedSprite> result;
-                int x = 0;
+        return tree;
+}
 
-                for (auto const& sprite : sprites) {
-                        result.push_back(PositionedSprite {
-                                sprite,
-                                Point(x, 0)});
-                        x += sprite.const_view().width();
-                }
+Image SpriteSheet::sheet_image(std::vector<PositionedSprite> const& sprites)
+{
+        auto const width = sheet_width(sprites);
+        auto const height = sheet_height(sprites);
+        Image image(width, height);
+        auto const image_view = boost::gil::view(image);
+        paint_sprites(sprites, image_view);
+        return image;
+}
 
-                return result;
-        }();
+int SpriteSheet::sheet_width(std::vector<PositionedSprite> const& sprites) noexcept
+{
+        return boost::accumulate(sprites,
+                                 0,
+                                 [](int result, auto const& sprite)
+                                 { return result + sprite.width(); });
+}
 
-        auto const sprite_sheet_tree =
-        [&]
-        {
-                auto const sprite_properties =
-                [](auto const& sprite)
-                {
-                        boost::property_tree::ptree properties;
-                        properties.put("x", sprite.position.x);
-                        properties.put("y", sprite.position.y);
-                        properties.put("width", sprite.width());
-                        properties.put("height", sprite.height());
-                        return properties;
-                };
-                
-                boost::property_tree::ptree tree;
+int SpriteSheet::sheet_height(std::vector<PositionedSprite> const& sprites) noexcept
+{
+        auto const tallest_sprite = *boost::max_element(sprites,
+                                                        [](auto const& s1, auto const& s2)
+                                                        { return s1.height() < s2.height(); });
+        return tallest_sprite.height();
+}
 
-                for (auto const& sprite : positioned_sprites)
-                        tree.add_child(sprite.name, sprite_properties(sprite));
-
-                return tree;
-        }();
-
-        auto sprite_sheet_image =
-        [&]
-        {
-                auto const width = boost::accumulate(positioned_sprites,
-                                                     0,
-                                                     [](int result, auto const& sprite)
-                                                     { return result + sprite.width(); });
-
-                auto const tallest_sprite = *boost::max_element(positioned_sprites,
-                                                                [](auto const& s1, auto const& s2)
-                                                                { return s1.height() < s2.height(); });
-                
-                return Image(width, tallest_sprite.height());
-        }();
-
-        auto const sprite_sheet_view = boost::gil::view(sprite_sheet_image);
-
-        for (auto const& sprite : positioned_sprites)
-                paint_over(sprite_sheet_view, sprite.const_view(), sprite.position);
-
-        return SpriteSheet(
-                std::move(sprite_sheet_image),
-                std::move(sprite_sheet_tree));
+void SpriteSheet::paint_sprites(std::vector<PositionedSprite> const& sprites,
+                                View const& image_view)
+{
+        for (auto const& sprite : sprites)
+                paint_over(image_view, sprite.const_view(), sprite.position);
 }
 
 void SpriteSheet::write_to(std::string const& base_path) const
