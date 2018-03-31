@@ -24,7 +24,7 @@ namespace Keycodes {
         auto constexpr up = SDLK_UP;
         auto constexpr space = SDLK_SPACE;
         auto constexpr left_shift = SDLK_LSHIFT;
-};
+}
 
 struct Window_deleter {
         void operator()(SDL_Window* window) const noexcept;

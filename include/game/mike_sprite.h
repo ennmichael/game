@@ -6,21 +6,19 @@
 
 namespace Game::Graphics {
 
-Engine::Graphics::Animated_sprites load_mike_sprites(Engine::Sdl::Renderer& renderer);
-
 class Mike_sprite {
 public:
-        Mike_sprite(Engine::Graphics::Animated_sprites& sprites,
+        Mike_sprite(Engine::Graphics::Sprite_sheet& sprite_sheet,
                     Logic::Mike const& mike) noexcept;
 
         void render(Engine::Sdl::Renderer& renderer);
         void update();
 
 private:
-        Engine::Graphics::Animated_sprite& current_sprite() noexcept;
+        Engine::Graphics::Animation& current_animation() noexcept;
         Engine::Sdl::Flip current_flip() const noexcept;
 
-        Engine::Graphics::Animated_sprites* sprites_;
+        Engine::Graphics::Sprite_sheet* sprite_sheet_;
         Logic::Mike const* mike_;
 };
 

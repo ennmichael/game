@@ -1,0 +1,34 @@
+{
+        "idle": {
+                "frame_count": 6,
+                "frame_delay": 7
+        },
+        "running": {
+                "frame_count": 8,
+                "frame_delay": 6
+        },
+        "jumping_in_place": {
+                "frame_count": 8,
+                "frame_delay": 7
+        },
+        "jumping_sideways": {
+                "frame_count": 2,
+                "frame_delay": 10
+        },
+        "landing_sideways": {
+                "frame_count": 2,
+                "frame_delay": 7
+        },
+        "preparing_to_jump_sideways": {
+                "frame_count": 3,
+                "frame_delay": 7
+        },
+        "pulling": {
+                "frame_count": 10,
+                "frame_delay": 6
+        },
+        "pushing": {
+                "frame_count": 9,
+                "frame_delay": 6
+        }
+}

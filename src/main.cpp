@@ -23,24 +23,7 @@ using namespace std::complex_literals;
 
 // TODO Always take `Dimension`s objects in interfaces, or provide two overloads
 
-struct General_configuration { // TODO Start using this
-        static General_configuration load(std::string const& path)
-        {
-                Engine::Config const config(path);
-
-                return {
-                        config.value<int>("fps"s),
-                        Engine::Complex_number(config.value<double>("player_x"s),
-                                               config.value<double>("player_y"s)),
-                        Engine::Complex_number(config.value<double>("block_x"s),
-                                               config.value<double>("block_y"s))
-                };
-        }
-
-        int fps;
-        Engine::Complex_number player_position;
-        Engine::Complex_number block_position;
-};
+auto constexpr fps = 60;
 
 int main()
 {
@@ -50,12 +33,17 @@ int main()
         auto window = Engine::Sdl::create_window("Title"s, 500, 500);
         auto renderer = Engine::Sdl::create_renderer(*window);
 
-        Engine::Graphics::Animated_sprites mike_sprites = Game::Graphics::load_mike_sprites(*renderer);
+        Engine::Graphics::Sprite_sheet sprite_sheet(renderer,
+                                                    "../res/sprites.png"s,
+                                                    "../res/sprites.json"s,
+                                                    "../res/animations.json"s);
+
         Game::Logic::Mike mike(200.0 + 150.0i,
                                Engine::Graphics::animations_durations(mike_sprites),
-                               mike_sprites.at("standing_still"s).frame_width(),
-                               mike_sprites.at("standing_still"s).frame_height()); // TODO These interfaces should take `dimensions` objects, or be overloaded
-        Game::Graphics::Mike_sprite mike_sprite(mike_sprites, mike);
+                               sprite_sheet.animation_frame_dimensions("idle"))
+                               // TODO These interfaces should take `dimensions` objects, or be
+        
+        Game::Graphics::Mike_sprite mike_sprite(sprite_sheet, mike);
 
         Engine::Sdl::Unique_texture block_texture = Engine::Sdl::load_texture(*renderer, "../res/sprites/block.png"s); 
 

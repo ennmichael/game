@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.1.0)
 
 project(engine)
-add_library(engine STATIC src/graphics.cpp src/config_loader.cpp src/gameplay.cpp src/keyboard.cpp src/sdl++.cpp)
+add_library(engine STATIC src/graphics.cpp src/gameplay.cpp src/keyboard.cpp src/sdl++.cpp)
 
 target_include_directories(engine PUBLIC "${engine_SOURCE_DIR}/include")
 target_include_directories(engine PRIVATE "${engine_SOURCE_DIR}/include/engine")

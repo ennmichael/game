@@ -21,11 +21,11 @@ public:
 
         struct State {
                 using Updater = std::function<
-                        std::optional<State>(Mike&, Engine::Gameplay::Keyboard const&)
+                        Optional_state(Mike&, Engine::Gameplay::Keyboard const&)
                 >;
 
                 Updater updater;
-                std::string sprite;
+                std::string sprite_name;
         };
 
         static State idle();
