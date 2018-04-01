@@ -11,19 +11,13 @@
 #include <iostream>
 
 // TODO When changing states, reset the previous animation
-
-// TODO Maybe move animations.json and sprites.json into the configs folder, and have
-// `spacker` handle separate output paths?
-
-// TODO Concepts like `Dimensions` should be elevated outside `sdl++`. What about `Rect`?
-// If we elevate `Rect` out, how do we solve compatibility issues? `to_sdl_rect`?
+// There might be a genuine need for this later, and we would accomplish it
+// via signaling, but until then, I'll hold off on this.
 
 // TODO Rename Game::Logic -> Game::Gameplay
 
 using namespace std::string_literals;
 using namespace std::complex_literals;
-
-// TODO Always take `Dimension`s objects in interfaces, or provide two overloads
 
 auto constexpr fps = 60;
 
