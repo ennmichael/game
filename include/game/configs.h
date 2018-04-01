@@ -11,6 +11,7 @@ struct Mike_config {
         explicit Mike_config(boost::property_tree::ptree const& tree);
 
         double speed;
+        double jump_speed;
         Engine::Complex_number starting_position;
         Engine::Dimensions dimensions;
 };

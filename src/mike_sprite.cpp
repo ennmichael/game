@@ -7,7 +7,7 @@ using namespace std::string_literals;
 
 namespace Game::Graphics {
 
-Mike_animations::Mike_animations(Logic::Mike const& mike,
+Mike_animations::Mike_animations(Gameplay::Mike const& mike,
                                  Engine::Graphics::Animations& animations) noexcept
         : mike_(&mike)
         , animations_(&animations)

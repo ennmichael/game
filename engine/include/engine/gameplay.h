@@ -40,7 +40,7 @@ public:
 
 private:
         Duration::Frames duration_;
-        Duration::Frames remainoing_duration_ = duration_;
+        Duration::Frames remaining_duration_ = duration_;
 };
 
 class Timed_callback {

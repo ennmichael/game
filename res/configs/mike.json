@@ -1,5 +1,6 @@
 {
         "speed": 3,
+        "jump_speed": 2,
         "x": 200,
         "y": 150,
         "width": 100,

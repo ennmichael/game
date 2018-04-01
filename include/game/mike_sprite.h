@@ -8,7 +8,7 @@ namespace Game::Graphics {
 
 class Mike_animations {
 public:
-        Mike_animations(Logic::Mike const& mike,
+        Mike_animations(Gameplay::Mike const& mike,
                         Engine::Graphics::Animations& animations) noexcept;
 
         void render_current_animation(Engine::Sdl::Renderer& renderer);
@@ -19,7 +19,7 @@ private:
         Engine::Sdl::Flip current_flip() const noexcept;
 
         Engine::Graphics::Sprite_sheet* sprite_sheet_;
-        Logic::Mike const* mike_;
+        Gameplay::Mike const* mike_;
         Engine::Graphics::Animations* animations_;
 };
 

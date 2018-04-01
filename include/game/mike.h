@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <functional>
 
-namespace Game::Logic {
+namespace Game::Gameplay {
 
 // TODO Refactor hold_nearest_block -> grab_nearest_block and make sure it doesn't do redundant work
 // TODO Add a `interacting_with_block` member function
@@ -29,12 +29,10 @@ public:
                         Optional_state(Mike&, Engine::Gameplay::Keyboard const&)
                 >;
 
-                Updater updater; // TODO note that this can handle timed states really nicely
                 std::string sprite_name;
+                Updater updater=[](Mike&, Engine::Gameplay::Keyboard const&) -> Optional_state
+                                { return boost::none; };
         };
-
-        static State idle();
-        static State running();
 
         using Actions_durations = std::unordered_map<std::string, Engine::Duration::Frames>;
 
@@ -43,6 +41,7 @@ public:
         Mike(Engine::Complex_number position,
              Engine::Dimensions dimensions,
              double speed,
+             double jump_speed,
              Actions_durations const& durations) noexcept;
 
         bool is_facing_left() const noexcept;
@@ -65,7 +64,19 @@ public:
         std::string const& current_sprite_name() const noexcept;
 
 private:
-        static State expiring_state(State s);
+        static State idle();
+        static State running();
+        static State jumping_in_place(Actions_durations const& durations);
+        static State preparing_to_jump_sideways(Actions_durations const& durations);
+        static State jumping_sideways(Actions_durations const& durations);
+        static State landing_sideways(Actions_durations const& durations);
+
+        static State expiring_state(State state,
+                                    State next_state,
+                                    Engine::Duration::Frames duration);
+        static State expiring_state(State state,
+                                    State next_state,
+                                    Actions_durations const& durations);
 
         template <class Entity>
         void turn_to(Entity const& entity) noexcept(noexcept(Engine::position(entity)))
@@ -80,12 +91,16 @@ private:
 
         void move_left() noexcept;
         void move_right() noexcept;
+        void move_in_current_direction(double speed) noexcept;
         void move_in_direction(Engine::Gameplay::Direction direction) noexcept;
+        void move_in_direction(Engine::Gameplay::Direction direction,
+                               double speed) noexcept;
 
         Engine::Complex_number position_;
         Engine::Dimensions dimensions_;
         double speed_;
-        Actions_durations durations_;
+        double jump_speed_;
+        Actions_durations durations_; // TODO Rename durations_ -> actions_durations_
         Engine::Gameplay::Direction direction_ = Engine::Gameplay::Direction::none;
         State state_ = idle();
 };

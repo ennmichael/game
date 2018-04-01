@@ -51,13 +51,13 @@ Frame_timer::Frame_timer(Duration::Frames duration) noexcept
 
 void Frame_timer::update() noexcept
 {
-        if (Utils::underlying_value(remainooing_duration_) > 0)
-                --remainooing_duration_;
+        if (Utils::underlying_value(remaining_duration_) > 0)
+                --remaining_duration_;
 }
 
 bool Frame_timer::ready() const noexcept
 {
-        return Utils::underlying_value(remainooing_duration_) <= 0;
+        return Utils::underlying_value(remaining_duration_) <= 0;
 }
 
 void Frame_timer::restart() noexcept

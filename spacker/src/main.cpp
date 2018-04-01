@@ -99,7 +99,7 @@ private:
 
 }
 
-int mainoo(int argc, char **argv)
+int main(int argc, char **argv)
 {
         struct CommandLineVisitor : boost::static_visitor<void> {
                 void operator()(CommandLineOptions::HelpString const& help) const

@@ -14,8 +14,6 @@
 // There might be a genuine need for this later, and we would accomplish it
 // via signaling, but until then, I'll hold off on this.
 
-// TODO Rename Game::Logic -> Game::Gameplay
-
 using namespace std::string_literals;
 using namespace std::complex_literals;
 
@@ -27,8 +25,8 @@ int main()
 
         auto window = Engine::Sdl::create_window("Title"s, 500, 500);
         auto renderer = Engine::Sdl::create_renderer(*window);
-        auto sprite_sheet_config = Engine::Graphics::load_sprite_sheet_config("../res/sprites.json"s);
-        auto animations_config = Engine::Graphics::load_animations_config("../res/animations.json"s);
+        auto sprite_sheet_config = Engine::Graphics::load_sprite_sheet_config("../res/configs/sprites.json"s);
+        auto animations_config = Engine::Graphics::load_animations_config("../res/configs/animations.json"s);
         Engine::Graphics::Sprite_sheet sprite_sheet(*renderer, "../res/sprites.png"s);
 
         auto [animations, static_sprites] = Engine::Graphics::load_resources(sprite_sheet,
@@ -38,12 +36,12 @@ int main()
         auto const mike_config = Game::Configs::load_config<
                 Game::Configs::Mike_config>("../res/configs/mike.json");
 
-        Game::Logic::Mike mike(mike_config, Engine::Graphics::animations_durations(animations_config));
+        Game::Gameplay::Mike mike(mike_config, Engine::Graphics::animations_durations(animations_config));
         Game::Graphics::Mike_animations mike_animations(mike, animations);
 
         Engine::Sdl::Unique_texture block_texture = Engine::Sdl::load_texture(*renderer, "../res/sprites/block.png"s); 
 
-        Game::Logic::Blocks blocks {
+        Game::Gameplay::Blocks blocks {
                 {
                         0.0 + 100.0i,
                         Engine::Sdl::texture_dimensions(*block_texture)
@@ -61,8 +59,7 @@ int main()
         auto const on_frame_advance =
         [&](Engine::Gameplay::Main_loop&, Engine::Gameplay::Keyboard const& keyboard)
         {
-                std::cout << mike.position() << '\n';
-
+                std::cout << mike.current_sprite_name() << '\n';
                 mike.update(keyboard);
 
                 Engine::Sdl::render_clear(*renderer);
@@ -70,13 +67,12 @@ int main()
                 Engine::Sdl::render_copy(*renderer, *block_texture, blocks[1].position);*/
                 mike_animations.render_current_animation(*renderer);
                 mike_animations.update_current_animation();
-                std::cout << mike.current_sprite_name() << '\n';
                 Engine::Sdl::render_present(*renderer);
         };
 
         signals.frame_advance.connect(on_frame_advance);
 
-        Engine::Gameplay::Main_loop mainoo_loop;
-        mainoo_loop.start(signals, fps);
+        Engine::Gameplay::Main_loop main_loop;
+        main_loop.start(signals, fps);
 }
 

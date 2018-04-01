@@ -2,7 +2,6 @@
 
 function replace
 {
-        echo $1 $2 $3
         find $1 -name "*.cpp" -type f -exec sed -i s/$2/$3/g {} +
         find $1 -name "*.h" -type f -exec sed -i s/$2/$3/g {} +
 }
