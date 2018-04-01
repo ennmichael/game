@@ -133,5 +133,67 @@ Complex_number translated_position(Complex_number position,
                                    Direction direction,
                                    double delta) noexcept;
 
+class State;
+using Unique_state = std::unique_ptr<State>;
+
+template <class... Args>
+class State {
+public:
+        virtual Unique_state update(Args&& args) = 0;
+
+        State(State const&) = delete;
+        State(State&&) = delete;
+
+        State& operator=(State const&) = delete;
+        State& operator=(State&&) = delete;
+
+        virtual ~State() = default;
+};
+
+template <template SomeState<class... Args>>
+class Expiring_state : SomeState {
+public:
+        template <class... BaseArgs>
+        Expiring_state(BaseArgs&&... args, std::unique_ptr<SomeState> next_state, Duration::Frames duration)
+                : SomeState(std::forward<BaseArgs>(args))
+                , next_state_(std::move(next_state))
+                , timer_(duration)
+        {}
+
+        Unique_state update(Args... args) override
+        {
+                SomeState::update(args...);
+                timer_.update();
+
+                if (timer.ready()) {
+                        std::unique_ptr<SomeState> result = nullptr;
+                        std::swap(result, next_state_);
+                        return next_state;
+                };
+        }
+
+private:
+        std::unique_ptr<SomeState> next_state_;
+        Engine::Gameplay::Frame_timer timer_;
+};
+
+template <template SomeState<class... Args>>
+class State_machine {
+public:
+        explicit State_machine(SomeState state) noexcept(std::is_nothrow_move_constructible_v<State>)
+                : state_(std::move(state))
+        {}
+
+        void update(Args... args)
+        {
+                auto const new_state = state_.update(args...);
+                if (new_state)
+                        state_ = std::move(new_state);
+        }
+
+private:
+        State state_;
+};
+
 }
 

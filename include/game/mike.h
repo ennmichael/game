@@ -18,21 +18,7 @@ namespace Game::Gameplay {
 class Mike {
 public:
         struct State;
-        using Optional_state = boost::optional<State>;
-
-        struct State {
-                struct Expiring {
-                        
-                };
-
-                using Updater = std::function<
-                        Optional_state(Mike&, Engine::Gameplay::Keyboard const&)
-                >;
-
-                std::string sprite_name;
-                Updater updater=[](Mike&, Engine::Gameplay::Keyboard const&) -> Optional_state
-                                { return boost::none; };
-        };
+        using Optional_state = boost::optional<State>; 
 
         using Actions_durations = std::unordered_map<std::string, Engine::Duration::Frames>;
 
@@ -64,19 +50,24 @@ public:
         std::string const& current_sprite_name() const noexcept;
 
 private:
-        static State idle();
-        static State running();
-        static State jumping_in_place(Actions_durations const& durations);
-        static State preparing_to_jump_sideways(Actions_durations const& durations);
-        static State jumping_sideways(Actions_durations const& durations);
-        static State landing_sideways(Actions_durations const& durations);
+        class State : public Engine::Gameplay::State<Mike&, Engine::Gameplay::Keyboard const&> {
+        public:
+                explicit State(std::string sprite_name);
+                std::string const& sprite_name() const noexcept;
 
-        static State expiring_state(State state,
-                                    State next_state,
-                                    Engine::Duration::Frames duration);
-        static State expiring_state(State state,
-                                    State next_state,
-                                    Actions_durations const& durations);
+        private:
+                std::string sprite_name;
+        };
+
+        class Idle;
+        class Running;
+        class Jumping_in_place;
+        class Preparing_to_jump_sideways;
+        // ...
+
+        using Expiring_state = Engine::Gameplay::Expiring_state<State>;
+        using State_machine = Engine::Gameplay::State_machine<State>;
+        using Unique_state = std::unique_ptr<State>;
 
         template <class Entity>
         void turn_to(Entity const& entity) noexcept(noexcept(Engine::position(entity)))

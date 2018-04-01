@@ -156,22 +156,7 @@ auto Mike::expiring_state(State state,
         return {
                 state.sprite_name,
 
-                [frame_timer = Engine::Gameplay::Frame_timer(duration),
-                 state       = std::move(state),
-                 next_state  = std::move(next_state)]
-                (Mike& mike, Engine::Gameplay::Keyboard const& keyboard) mutable -> Optional_state
-                {
-                        frame_timer.update();
-                        auto const new_state = state.updater(mike, keyboard);
-
-                        if (new_state)
-                                return new_state;
-
-                        if (frame_timer.ready())
-                                return next_state;
-
-                        return boost::none;
-                }
+                
         };
 }
 
