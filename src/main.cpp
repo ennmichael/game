@@ -59,7 +59,6 @@ int main()
         auto const on_frame_advance =
         [&](Engine::Gameplay::Main_loop&, Engine::Gameplay::Keyboard const& keyboard)
         {
-                std::cout << mike.current_sprite_name() << '\n';
                 mike.update(keyboard);
 
                 Engine::Sdl::render_clear(*renderer);
@@ -67,6 +66,7 @@ int main()
                 Engine::Sdl::render_copy(*renderer, *block_texture, blocks[1].position);*/
                 mike_animations.render_current_animation(*renderer);
                 mike_animations.update_current_animation();
+                Engine::Graphics::apply_filter(*renderer, Engine::Color::black().with_alpha(100));
                 Engine::Sdl::render_present(*renderer);
         };
 

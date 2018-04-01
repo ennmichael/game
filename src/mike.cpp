@@ -52,9 +52,7 @@ void Mike::snap_to(Engine::Gameplay::Checkbox checkbox) noexcept
 
 void Mike::update(Engine::Gameplay::Keyboard const& keyboard)
 {
-        auto const new_state = state_.updater(*this, keyboard);
-        if (new_state)
-                state_ = *new_state;
+        Engine::Gameplay::update_state(state_, *this, keyboard);
 }
 
 Engine::Gameplay::Direction Mike::direction() const noexcept
@@ -149,21 +147,10 @@ auto Mike::landing_sideways(Actions_durations const& durations) -> State
         return expiring_state({"landing_sideways"s}, idle(), durations);
 }
 
-auto Mike::expiring_state(State state,
-                          State next_state,
-                          Engine::Duration::Frames duration) -> State
-{
-        return {
-                state.sprite_name,
-
-                
-        };
-}
-
 auto Mike::expiring_state(State state, State next_state, Actions_durations const& durations) -> State
 {
         auto const duration = durations.at(state.sprite_name);
-        return expiring_state(state, next_state, duration);
+        return Engine::Gameplay::expiring_state(std::move(state), std::move(next_state), duration);
 }
 
 void Mike::move_left() noexcept

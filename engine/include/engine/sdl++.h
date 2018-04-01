@@ -67,8 +67,28 @@ public:
         Manager& operator=(Manager&&) = delete;
 };
 
+class Renderer_color_lock {
+public:
+        Renderer_color_lock(Renderer& renderer, Color color);
+
+        Renderer_color_lock(Renderer_color_lock const&) = delete;
+        Renderer_color_lock(Renderer_color_lock&&) = delete;
+
+        Renderer_color_lock& operator=(Renderer_color_lock const&) = delete;
+        Renderer_color_lock& operator=(Renderer_color_lock&&) = delete;
+
+        ~Renderer_color_lock();
+
+private:
+        Renderer& renderer_;
+        Color previous_color_;
+};
+
 Unique_window create_window(std::string const& title, int width, int height);
-Unique_renderer create_renderer(Window& window);
+Unique_renderer create_renderer(Window& window, Color color=Color::white());
+
+void set_render_color(Renderer& renderer, Color color);
+Color get_render_color(Renderer& renderer);
 
 void render_clear(Renderer& renderer);
 void render_present(Renderer& renderer);
@@ -79,31 +99,25 @@ enum class Flip {
         horizontal = SDL_FLIP_HORIZONTAL
 };
 
-void render_copy(Renderer& renderer, 
-                 Texture& texture, 
-                 Rect source, 
+void render_rect(Renderer& renderer, Rect rect);
+void render_copy(Renderer& renderer, Texture& texture, Rect source, Rect destination);
+void render_copy(Renderer& renderer,
+                 Texture& texture,
+                 Rect source,
                  Rect destination,
                  double angle=0,
                  Flip flip=Flip::none);
 
-void render_copy(Renderer& renderer,
-                 Texture& texture,
-                 Rect source,
-                 Rect destination);
-
 Unique_texture load_texture(Renderer& renderer, std::string path);
-
-bool has_intersection(Rect r1, Rect r2) noexcept;
 
 Rect make_rect(Complex_number position, Dimensions dimensions) noexcept;
 Dimensions rect_dimensions(Rect rect) noexcept;
 
 Dimensions texture_dimensions(Texture& texture);
-int texture_width(Texture& texture);
-int texture_height(Texture& texture);
+Dimensions renderer_dimensions(Sdl::Renderer& renderer);
 
+bool has_intersection(Rect r1, Rect r2) noexcept;
 Duration::Milliseconds get_ticks() noexcept;
-
 Optional_event poll_event();
 
 }

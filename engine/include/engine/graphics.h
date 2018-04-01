@@ -102,5 +102,7 @@ Resources load_resources(Sprite_sheet& sprite_sheet,
                          Sprite_sheet_config const& sprite_sheet_config,
                          Animations_config const& animations_config);
 
+void apply_filter(Sdl::Renderer& renderer, Color color);
+
 }
 

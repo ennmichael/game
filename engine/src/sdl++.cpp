@@ -42,6 +42,18 @@ Manager::~Manager()
         SDL_Quit();
 }
 
+Renderer_color_lock::Renderer_color_lock(Renderer& renderer, Color color)
+        : renderer_(renderer)
+        , previous_color_(get_render_color(renderer))
+{
+        set_render_color(renderer_, color);
+}
+
+Renderer_color_lock::~Renderer_color_lock()
+{
+        set_render_color(renderer_, previous_color_);
+}
+
 Unique_window create_window(std::string const& title, int width, int height)
 {
         auto* window = SDL_CreateWindow(title.c_str(),
@@ -57,16 +69,38 @@ Unique_window create_window(std::string const& title, int width, int height)
         return Unique_window(window);
 }
 
-Unique_renderer create_renderer(Window& window)
+namespace {
+
+void set_blend_mode(Renderer& renderer)
+{
+        SDL_SetRenderDrawBlendMode(&renderer, SDL_BLENDMODE_BLEND);
+}
+
+}
+
+Unique_renderer create_renderer(Window& window, Color color)
 {
         auto* renderer = SDL_CreateRenderer(&window, -1, 0);
 
         if (!renderer)
                 throw Error();
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-
+        set_render_color(*renderer, color);
+        set_blend_mode(*renderer);
         return Unique_renderer(renderer);
+}
+
+void set_render_color(Renderer& renderer, Color color)
+{
+
+        SDL_SetRenderDrawColor(&renderer, color.r, color.g, color.b, color.a);
+}
+
+Color get_render_color(Renderer& renderer)
+{
+        Color color;
+        SDL_GetRenderDrawColor(&renderer, &color.r, &color.g, &color.b, &color.a);
+        return color;
 }
 
 void render_clear(Renderer& renderer)
@@ -78,6 +112,16 @@ void render_clear(Renderer& renderer)
 void render_present(Renderer& renderer)
 {
         SDL_RenderPresent(&renderer);
+}
+
+void render_rect(Renderer& renderer, Rect rect)
+{
+        SDL_RenderFillRect(&renderer, &rect);
+}
+
+void render_copy(Renderer& renderer, Texture& texture, Rect source, Rect destination)
+{
+        render_copy(renderer, texture, source, destination, 0, Flip::none);
 }
 
 void render_copy(Renderer& renderer, 
@@ -96,14 +140,6 @@ void render_copy(Renderer& renderer,
                              static_cast<SDL_RendererFlip>(flip)) < 0) {
                 throw Error();
         }
-}
-
-void render_copy(Renderer& renderer,
-                 Texture& texture,
-                 Rect source,
-                 Rect destination)
-{
-        render_copy(renderer, texture, source, destination, 0, Flip::none);
 }
 
 void render_copy(Renderer& renderer,
@@ -129,11 +165,6 @@ Unique_texture load_texture(Renderer& renderer, std::string path)
         return Unique_texture(texture);
 }
 
-bool has_intersection(Rect r1, Rect r2) noexcept
-{
-        return SDL_HasIntersection(&r1, &r2);
-}
-
 Rect make_rect(Complex_number position, Dimensions dimensions) noexcept
 {
         auto const [w, h] = dimensions;
@@ -152,26 +183,23 @@ Dimensions rect_dimensions(Rect rect) noexcept
 
 Dimensions texture_dimensions(Texture& texture)
 {
-        return Dimensions {
-                texture_width(texture),
-                texture_height(texture)
-        };
+        Dimensions dimensions;
+        if (SDL_QueryTexture(&texture, nullptr, nullptr, &dimensions.width, &dimensions.height) < 0)
+                throw Error();
+        return dimensions;
 }
 
-int texture_width(Texture& texture)
+Dimensions renderer_dimensions(Sdl::Renderer& renderer)
 {
-        int width;
-        if (SDL_QueryTexture(&texture, nullptr, nullptr, &width, nullptr) < 0)
+        Dimensions dimensions;
+        if (SDL_GetRendererOutputSize(&renderer, &dimensions.width, &dimensions.height))
                 throw Error();
-        return width;
+        return dimensions;
 }
 
-int texture_height(Texture& texture)
+bool has_intersection(Rect r1, Rect r2) noexcept
 {
-        int height;
-        if (SDL_QueryTexture(&texture, nullptr, nullptr, nullptr, &height) < 0)
-                throw Error();
-        return height;
+        return SDL_HasIntersection(&r1, &r2);
 }
 
 Duration::Milliseconds get_ticks() noexcept

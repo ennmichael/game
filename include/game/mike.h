@@ -17,9 +17,6 @@ namespace Game::Gameplay {
 
 class Mike {
 public:
-        struct State;
-        using Optional_state = boost::optional<State>; 
-
         using Actions_durations = std::unordered_map<std::string, Engine::Duration::Frames>;
 
         Mike(Configs::Mike_config const& mike_config,
@@ -40,34 +37,49 @@ public:
         }
 
         void snap_to(Engine::Gameplay::Checkbox checkbox) noexcept;
-
         void update(Engine::Gameplay::Keyboard const& keyboard);
       
         Engine::Gameplay::Direction direction() const noexcept;
         Engine::Complex_number position() const noexcept;
         Engine::Gameplay::Checkbox checkbox() const noexcept;
+        int sickness_percentage() const noexcept;
 
         std::string const& current_sprite_name() const noexcept;
 
 private:
-        class State : public Engine::Gameplay::State<Mike&, Engine::Gameplay::Keyboard const&> {
+        struct State;
+        using Optional_state = boost::optional<State>;
+
+        class Sickness {
         public:
-                explicit State(std::string sprite_name);
-                std::string const& sprite_name() const noexcept;
+                Sickness(int increase_rate, int decrease_rate) noexcept;
+
+                int percentage() const noexcept;
+                void increase() noexcept;
+                void decrease() noexcept;
 
         private:
-                std::string sprite_name;
+                int percentage_;
+                int increase_rate_;
+                int decrease_rate_;
         };
 
-        class Idle;
-        class Running;
-        class Jumping_in_place;
-        class Preparing_to_jump_sideways;
-        // ...
+        struct State {
+                using Update = std::function<Optional_state(Mike&, Engine::Gameplay::Keyboard const&)>;
 
-        using Expiring_state = Engine::Gameplay::Expiring_state<State>;
-        using State_machine = Engine::Gameplay::State_machine<State>;
-        using Unique_state = std::unique_ptr<State>;
+                std::string sprite_name;
+                Update update=[](Mike&, Engine::Gameplay::Keyboard const&) -> Optional_state
+                              { return boost::none; };
+        };
+
+        static State idle();
+        static State running();
+        static State jumping_in_place(Actions_durations const& durations);
+        static State preparing_to_jump_sideways(Actions_durations const& durations);
+        static State jumping_sideways(Actions_durations const& durations);
+        static State landing_sideways(Actions_durations const& durations);
+
+        static State expiring_state(State state, State next_state, Actions_durations const& durations);
 
         template <class Entity>
         void turn_to(Entity const& entity) noexcept(noexcept(Engine::position(entity)))
@@ -93,7 +105,18 @@ private:
         double jump_speed_;
         Actions_durations durations_; // TODO Rename durations_ -> actions_durations_
         Engine::Gameplay::Direction direction_ = Engine::Gameplay::Direction::none;
-        State state_ = idle();
+        Sickness sickness_;
+        State state_=idle();
+};
+
+class Filter {
+public:
+        Filter(Mike const& mike) noexcept;
+
+        void render(Sdl::Renderer&);
+
+private:
+        Mike* mike_;
 };
 
 }

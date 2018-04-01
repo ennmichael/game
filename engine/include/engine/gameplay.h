@@ -133,67 +133,39 @@ Complex_number translated_position(Complex_number position,
                                    Direction direction,
                                    double delta) noexcept;
 
-class State;
-using Unique_state = std::unique_ptr<State>;
-
-template <class... Args>
-class State {
-public:
-        virtual Unique_state update(Args&& args) = 0;
-
-        State(State const&) = delete;
-        State(State&&) = delete;
-
-        State& operator=(State const&) = delete;
-        State& operator=(State&&) = delete;
-
-        virtual ~State() = default;
-};
-
-template <template SomeState<class... Args>>
-class Expiring_state : SomeState {
-public:
-        template <class... BaseArgs>
-        Expiring_state(BaseArgs&&... args, std::unique_ptr<SomeState> next_state, Duration::Frames duration)
-                : SomeState(std::forward<BaseArgs>(args))
-                , next_state_(std::move(next_state))
-                , timer_(duration)
-        {}
-
-        Unique_state update(Args... args) override
-        {
-                SomeState::update(args...);
-                timer_.update();
-
-                if (timer.ready()) {
-                        std::unique_ptr<SomeState> result = nullptr;
-                        std::swap(result, next_state_);
-                        return next_state;
+template <class State, class NextState>
+State expiring_state(State state, NextState&& next_state, Duration::Frames duration)
+{
+        auto old_update = state.update;
+        state.update =
+                [frame_timer = Engine::Gameplay::Frame_timer(duration),
+                 old_update  = std::move(old_update),
+                 next_state  = std::forward<NextState>(next_state)]
+                (auto&&... args) mutable -> boost::optional<State>
+                {
+                        frame_timer.update();
+                        if(auto const new_state = old_update(std::forward<decltype(args)>(args)...); 
+                           new_state)
+                                return new_state;
+                        
+                        /**
+                         * The next_state *could* be moved out of the lambda instead of being copied.
+                         * I'm not moving it as a safety caution.
+                         */
+                        if (frame_timer.ready())
+                                return next_state;
+                        return boost::none;
                 };
-        }
 
-private:
-        std::unique_ptr<SomeState> next_state_;
-        Engine::Gameplay::Frame_timer timer_;
-};
+        return state;
+}
 
-template <template SomeState<class... Args>>
-class State_machine {
-public:
-        explicit State_machine(SomeState state) noexcept(std::is_nothrow_move_constructible_v<State>)
-                : state_(std::move(state))
-        {}
-
-        void update(Args... args)
-        {
-                auto const new_state = state_.update(args...);
-                if (new_state)
-                        state_ = std::move(new_state);
-        }
-
-private:
-        State state_;
-};
+template <class State, class... Args>
+void update_state(State& state, Args&&... args)
+{
+        if (auto const new_state = state.update(std::forward<Args>(args)...); new_state)
+                state = std::move(*new_state);
+}
 
 }
 

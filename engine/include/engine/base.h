@@ -137,5 +137,30 @@ constexpr bool operator!=(Dimensions d1, Dimensions d2) noexcept
         return !(d1 == d2);
 }
 
+struct Color {
+        constexpr Color with_alpha(unsigned char alpha) const noexcept
+        { return {r, g, b, alpha}; }
+
+        static constexpr Color red()
+        { return {255, 0, 0}; }
+
+        static constexpr Color green()
+        { return {0, 255, 0}; }
+
+        static constexpr Color blue()
+        { return {0, 0, 255}; }
+
+        static constexpr Color black()
+        { return {0, 0, 0}; }
+
+        static constexpr Color white()
+        { return {255, 255, 255}; }
+
+        unsigned char r;
+        unsigned char g;
+        unsigned char b;
+        unsigned char a=255;
+};
+
 }
 

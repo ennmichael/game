@@ -203,5 +203,15 @@ Resources load_resources(Sprite_sheet& sprite_sheet,
         };
 }
 
+void apply_filter(Sdl::Renderer& renderer, Color color)
+{
+        Sdl::Renderer_color_lock color_lock(renderer, color);
+        (void)color_lock;
+
+        auto const dimensions = Sdl::renderer_dimensions(renderer);
+        auto const rect = Sdl::make_rect(Complex_number(), dimensions);
+        return Sdl::render_rect(renderer, rect);
+}
+
 }
 
