@@ -8,15 +8,17 @@
 #include <unordered_map>
 #include <string>
 
+/*
+ * TODO Instead of `Sprite`, introduce the concept of a `Static_sprite`
+ */
+
 namespace Engine::Graphics {
 
-namespace Detail {
-
-class Raw_sprite_sheet {
+class Sprite_sheet {
 public:
         class Sprite {
         public:
-                Sprite(Raw_sprite_sheet& sheet,
+                Sprite(Sprite_sheet& sheet,
                        Sdl::Rect source) noexcept;
 
                 void render(Sdl::Renderer& renderer,
@@ -24,13 +26,13 @@ public:
                             Sdl::Flip flip=Sdl::Flip::none);
 
         private:
-                Raw_sprite_sheet* sprite_sheet_;
+                Sprite_sheet* sprite_sheet_;
                 Sdl::Rect source_;
         };
 
         class Animation {
         public:
-                Animation(Raw_sprite_sheet& sheet,
+                Animation(Sprite_sheet& sheet,
                           Sdl::Rect first_frame_source,
                           Duration::Frames frame_delay,
                           int frame_count) noexcept;
@@ -40,17 +42,19 @@ public:
                             Sdl::Flip flip=Sdl::Flip::none);
                 void update() noexcept;
 
-                Sdl::Dimensions frame_dimensions() const noexcept;
+                Dimensions frame_dimensions() const noexcept;
 
         private:
-                Raw_sprite_sheet* sprite_sheet_;
+                Sprite_sheet* sprite_sheet_;
                 Sdl::Rect source_;
                 Gameplay::Frame_timer timer_;
                 int frame_count_;
                 int current_frame_ = 0;
         };
 
-        explicit Raw_sprite_sheet(Sdl::Unique_texture texture) noexcept;
+        explicit Sprite_sheet(Sdl::Unique_texture texture) noexcept;
+        Sprite_sheet(Sdl::Renderer& renderer,
+                     std::string const& path);
 
         Sprite sprite(Sdl::Rect source) noexcept;
         Animation animation(Sdl::Rect first_frame_source,
@@ -66,7 +70,8 @@ private:
         Sdl::Unique_texture texture_;
 };
 
-} // Close namespace Detail
+using Sprite = Sprite_sheet::Sprite;
+using Animation = Sprite_sheet::Animation;
 
 struct Animation_properties {
         Duration::Frames animation_duration() const noexcept;
@@ -85,32 +90,17 @@ using Animations_durations = std::unordered_map<std::string, Duration::Frames>;
 Animations_config load_animations_config(std::string const& json_path);
 Animations_durations animations_durations(Animations_config const& animations_config);
 
-class Sprite_sheet {
-public:
-        using Sprite = Detail::Raw_sprite_sheet::Sprite;
-        using Animation = Detail::Raw_sprite_sheet::Animation;
+using Animations = std::unordered_map<std::string, Animation>;
+using Sprites = std::unordered_map<std::string, Sprite>;
 
-        Sprite_sheet(Sdl::Unique_texture texture,
-                     Sprite_sheet_config sprite_sheet_config,
-                     Animations_config animations_config);
-        Sprite_sheet(Sdl::Renderer& renderer,
-                     std::string const& image_path,
-                     Sprite_sheet_config sprite_sheet_config,
-                     Animations_config animations_config);
-
-        Sprite sprite(std::string const& name);
-        Animation animation(std::string const& name);
-
-private:
-        Sdl::Rect animation_first_rect(std::string const& name, int frame_count) const;
-
-        Detail::Raw_sprite_sheet sprite_sheet_;
-        Sprite_sheet_config sprite_sheet_config_;
-        Animations_config animations_config_;
+struct Resources {
+        Animations animations;
+        Sprites sprites;
 };
 
-using Sprite = Sprite_sheet::Sprite;
-using Animation = Sprite_sheet::Animation;
+Resources load_resources(Sprite_sheet& sprite_sheet,
+                         Sprite_sheet_config const& sprite_sheet_config,
+                         Animations_config const& animations_config);
 
 }
 

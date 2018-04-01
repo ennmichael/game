@@ -1,5 +1,6 @@
 #include "gameplay.h"
 #include "utils.h"
+#include "boost/range/adaptors.hpp"
 #include <unordered_map>
 #include <optional>
 #include <exception>
@@ -7,6 +8,10 @@
 #include <type_traits>
 #include <iterator>
 #include <algorithm>
+
+/**
+ * TODO Switch to boost::optional
+ */
 
 namespace Engine::Gameplay {
 
@@ -179,13 +184,12 @@ Const_checkboxes_pointers close_checkboxes(Const_checkboxes_pointers const& chec
                                      Complex_number pivot,
                                      double minimum_distance)
 {
-        return Utils::filter(checkboxes,
-                [pivot, minimum_distance](Checkbox const* checkbox)
+        return Utils::to_vector(checkboxes | boost::adaptors::filtered(
+                [&](Checkbox const* checkbox)
                 {
                         auto const d = distance(*checkbox, pivot);
                         return d <= minimum_distance;
-                }
-        );
+                }));
 }
 
 Sdl::Rect Checkbox::to_rect() const noexcept

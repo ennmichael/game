@@ -6,14 +6,20 @@ using namespace std::string_literals;
 
 namespace Game::Logic {
 
+Mike::Mike(Configs::Mike_config const& mike_config,
+           Actions_durations const& durations) noexcept
+        : Mike(mike_config.starting_position, mike_config.dimensions, mike_config.speed, durations)
+{}
+
 Mike::Mike(Engine::Complex_number position,
-           Actions_durations const& durations,
-           Engine::Sdl::Dimensions dimensions) noexcept
+           Engine::Dimensions dimensions,
+           double speed,
+           Actions_durations const& durations) noexcept
         : position_(position)
-        , durations_(durations)
         , dimensions_(dimensions)
-{
-}
+        , speed_(speed)
+        , durations_(durations)
+{}
 
 auto Mike::idle() -> State
 {
@@ -71,14 +77,11 @@ void Mike::snap_to(Engine::Gameplay::Checkbox checkbox) noexcept
         position_.real(new_real(checkbox));
 }
 
-void Mike::move_left() noexcept
+void Mike::update(Engine::Gameplay::Keyboard const& keyboard)
 {
-        move_in_direction(Engine::Gameplay::Direction::left);
-}
-
-void Mike::move_right() noexcept
-{
-        move_in_direction(Engine::Gameplay::Direction::right);
+        auto const new_state = state_.updater(*this, keyboard);
+        if (new_state)
+                state_ = *new_state;
 }
 
 Engine::Gameplay::Direction Mike::direction() const noexcept
@@ -97,6 +100,21 @@ Engine::Gameplay::Checkbox Mike::checkbox() const noexcept
                 position_,
                 dimensions_
         };
+}
+
+std::string const& Mike::current_sprite_name() const noexcept
+{
+        return state_.sprite_name;
+}
+
+void Mike::move_left() noexcept
+{
+        move_in_direction(Engine::Gameplay::Direction::left);
+}
+
+void Mike::move_right() noexcept
+{
+        move_in_direction(Engine::Gameplay::Direction::right);
 }
 
 void Mike::move_in_direction(Engine::Gameplay::Direction direction) noexcept

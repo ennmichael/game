@@ -7,40 +7,33 @@ using namespace std::string_literals;
 
 namespace Game::Graphics {
 
-Mike_sprite::Mike_sprite(Engine::Graphics::Sprite_sheet& sprite_sheet,
-                         Logic::Mike const& mike) noexcept
-        : sprite_sheet_(&sprite_sheet)
-        , mike_(&mike)
-        , current_animation_(current_mike_animation(sprite_sheet, mike))
+Mike_animations::Mike_animations(Logic::Mike const& mike,
+                                 Engine::Graphics::Animations& animations) noexcept
+        : mike_(&mike)
+        , animations_(&animations)
 {}
 
-void Mike_sprite::render(Engine::Sdl::Renderer& renderer)
+void Mike_animations::render_current_animation(Engine::Sdl::Renderer& renderer)
 {
-        current_animation_.render(renderer,
-                                  mike_->position(),
-                                  current_flip());
+        current_animation().render(renderer,
+                                   mike_->position(),
+                                   current_flip());
 }
 
-void Mike_sprite::update()
+void Mike_animations::update_current_animation() noexcept
 {
-        current_animation_.update();
+        current_animation().update();
 }
 
-void Mike_sprite::switch_animation()
+Engine::Graphics::Animation& Mike_animations::current_animation() noexcept
 {
-        current_animation_ = current_mike_animation(*sprite_sheet_, *mike_);
+        return animations_->at(mike_->current_sprite_name());
 }
 
-Engine::Graphics::Animation current_mike_animation(Engine::Graphics::Sprite_sheet& sprite_sheet,
-                                                   Logic::Mike const& mike)
-{
-        return sprite_sheet.animation(mike.current_sprite_name());
-}
-
-Engine::Sdl::Flip Mike_sprite::current_flip() const noexcept
+Engine::Sdl::Flip Mike_animations::current_flip() const noexcept
 {
         return mike_->is_facing_left()?
-                Engine::Sdl::Flip::horizontal : Engine::Sdl::Flip::vertical;
+                Engine::Sdl::Flip::horizontal : Engine::Sdl::Flip::none;
 }
 
 }

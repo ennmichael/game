@@ -95,19 +95,8 @@ Unique_texture load_texture(Renderer& renderer, std::string path);
 
 bool has_intersection(Rect r1, Rect r2) noexcept;
 
-struct Dimensions {
-        explicit Dimensions(Rect rect) noexcept;
-        Dimensions(int width, int height);
-        Dimensions(Texture& texture);
-        
-        int width;
-        int height;
-};
-
-bool operator==(Dimensions d1, Dimensions d2) noexcept;
-bool operator!=(Dimensions d1, Dimensions d2) noexcept;
-
 Rect make_rect(Complex_number position, Dimensions dimensions) noexcept;
+Dimensions rect_dimensions(Rect rect) noexcept;
 
 Dimensions texture_dimensions(Texture& texture);
 int texture_width(Texture& texture);

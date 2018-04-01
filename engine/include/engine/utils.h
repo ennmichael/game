@@ -1,9 +1,10 @@
 #pragma once
 
+#include "boost/property_tree/ptree.hpp"
+#include "boost/property_tree/json_parser.hpp"
 #include <type_traits>
 #include <complex>
-#include <algorithm>
-#include <variant>
+#include <vector>
 
 namespace Engine::Utils {
 
@@ -14,12 +15,18 @@ auto constexpr underlying_value(Enum e) noexcept
         return static_cast<Underlying_type>(e);
 }
 
-template <class Container, class Predicate>
-Container filter(Container const& c, Predicate pred)
+template <class String>
+boost::property_tree::ptree read_json_tree(const String& path)
 {
-        Container result;
-        std::copy_if(c.cbegin(), c.cend(), std::back_inserter(result), pred);
+        boost::property_tree::ptree result;
+        boost::property_tree::read_json(path, result);
         return result;
+}
+
+template <class Range>
+auto to_vector(Range const& range)
+{
+        return std::vector<typename Range::value_type>(range.begin(), range.end());;
 }
 
 }

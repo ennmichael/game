@@ -2,6 +2,7 @@
 #include "block.h"
 #include "mike_sprite.h"
 #include "engine/engine.h"
+#include "configs.h"
 #include <string>
 #include <utility>
 
@@ -9,17 +10,18 @@
 
 #include <iostream>
 
+// TODO When changing states, reset the previous animation
 
+// TODO Maybe move animations.json and sprites.json into the configs folder, and have
+// `spacker` handle separate output paths?
 
+// TODO Concepts like `Dimensions` should be elevated outside `sdl++`. What about `Rect`?
+// If we elevate `Rect` out, how do we solve compatibility issues? `to_sdl_rect`?
 
 // TODO Rename Game::Logic -> Game::Gameplay
 
 using namespace std::string_literals;
 using namespace std::complex_literals;
-
-// TODO *_sprite and *_texture classes should take positions as parameters when rendering,
-// which means Block_texture is a redundant class.
-// If we don't do it this way, we end up with circular references.
 
 // TODO Always take `Dimension`s objects in interfaces, or provide two overloads
 
@@ -31,18 +33,19 @@ int main()
 
         auto window = Engine::Sdl::create_window("Title"s, 500, 500);
         auto renderer = Engine::Sdl::create_renderer(*window);
-        auto sprite_sheet_config = Engine::Graphics::load_sprite_sheet_config("../res/sprites.json");
-        auto animations_config = Engine::Graphics::load_animations_config("../res/animations.json");
-        Engine::Graphics::Sprite_sheet sprite_sheet(*renderer,
-                                                    "../res/sprites.png"s,
-                                                    sprite_sheet_config,
-                                                    animations_config);
-                                                  
-        Game::Logic::Mike mike(200.0 + 150.0i,
-                               Engine::Graphics::animations_durations(animations_config),
-                               sprite_sheet.animation("idle").frame_dimensions());
-        
-        Game::Graphics::Mike_sprite mike_sprite(sprite_sheet, mike);
+        auto sprite_sheet_config = Engine::Graphics::load_sprite_sheet_config("../res/sprites.json"s);
+        auto animations_config = Engine::Graphics::load_animations_config("../res/animations.json"s);
+        Engine::Graphics::Sprite_sheet sprite_sheet(*renderer, "../res/sprites.png"s);
+
+        auto [animations, static_sprites] = Engine::Graphics::load_resources(sprite_sheet,
+                                                                             sprite_sheet_config,
+                                                                             animations_config);
+
+        auto const mike_config = Game::Configs::load_config<
+                Game::Configs::Mike_config>("../res/configs/mike.json");
+
+        Game::Logic::Mike mike(mike_config, Engine::Graphics::animations_durations(animations_config));
+        Game::Graphics::Mike_animations mike_animations(mike, animations);
 
         Engine::Sdl::Unique_texture block_texture = Engine::Sdl::load_texture(*renderer, "../res/sprites/block.png"s); 
 
@@ -62,15 +65,18 @@ int main()
         Engine::Gameplay::Signals signals;
 
         auto const on_frame_advance =
-        [&](Engine::Gameplay::Main_loop&, Engine::Gameplay::Keyboard const&)
+        [&](Engine::Gameplay::Main_loop&, Engine::Gameplay::Keyboard const& keyboard)
         {
                 std::cout << mike.position() << '\n';
+
+                mike.update(keyboard);
 
                 Engine::Sdl::render_clear(*renderer);
                 /*Engine::Sdl::render_copy(*renderer, *block_texture, blocks[0].position);
                 Engine::Sdl::render_copy(*renderer, *block_texture, blocks[1].position);*/
-                mike_sprite.render(*renderer);
-                mike_sprite.update();
+                mike_animations.render_current_animation(*renderer);
+                mike_animations.update_current_animation();
+                std::cout << mike.current_sprite_name() << '\n';
                 Engine::Sdl::render_present(*renderer);
         };
 

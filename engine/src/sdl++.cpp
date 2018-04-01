@@ -112,9 +112,9 @@ void render_copy(Renderer& renderer,
                  double angle,
                  Flip flip)
 {
-        Dimensions texture_dimensions(texture);
-        auto const src = make_rect(Complex_number(0, 0), texture_dimensions);
-        auto const dst = make_rect(position, texture_dimensions);
+        auto const dimensions = texture_dimensions(texture);
+        auto const src = make_rect(Complex_number(0, 0), dimensions);
+        auto const dst = make_rect(position, dimensions);
 
         render_copy(renderer, texture, src, dst, angle, flip);
 }
@@ -134,32 +134,6 @@ bool has_intersection(Rect r1, Rect r2) noexcept
         return SDL_HasIntersection(&r1, &r2);
 }
 
-Dimensions::Dimensions(Rect rect) noexcept
-        : width(rect.w)
-        , height(rect.h)
-{}
-
-Dimensions::Dimensions(int width, int height)
-        : width(width)
-        , height(height)
-{}
-
-Dimensions::Dimensions(Texture& texture)
-        : width(texture_width(texture))
-        , height(texture_height(texture))
-{}
-
-bool operator==(Dimensions d1, Dimensions d2) noexcept
-{
-        return d1.width == d2.width &&
-               d1.height == d2.height;
-}
-
-bool operator!=(Dimensions d1, Dimensions d2) noexcept
-{
-        return !(d1 == d2);
-}
-
 Rect make_rect(Complex_number position, Dimensions dimensions) noexcept
 {
         auto const [w, h] = dimensions;
@@ -168,6 +142,19 @@ Rect make_rect(Complex_number position, Dimensions dimensions) noexcept
                 static_cast<int>(position.real()),
                 static_cast<int>(position.imag()),
                 w, h
+        };
+}
+
+Dimensions rect_dimensions(Rect rect) noexcept
+{
+        return {rect.w, rect.h};
+}
+
+Dimensions texture_dimensions(Texture& texture)
+{
+        return Dimensions {
+                texture_width(texture),
+                texture_height(texture)
         };
 }
 
@@ -185,12 +172,6 @@ int texture_height(Texture& texture)
         if (SDL_QueryTexture(&texture, nullptr, nullptr, nullptr, &height) < 0)
                 throw Error();
         return height;
-}
-
-Dimensions texture_dimensions(Texture& texture)
-{
-        return Dimensions(texture_width(texture),
-                          texture_height(texture));
 }
 
 Duration::Milliseconds get_ticks() noexcept

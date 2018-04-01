@@ -8,33 +8,31 @@ using namespace std::string_literals;
 
 namespace Engine::Graphics {
 
-namespace Detail {
-
-Raw_sprite_sheet::Sprite::Sprite(Raw_sprite_sheet& sprite_sheet,
+Sprite_sheet::Sprite::Sprite(Sprite_sheet& sprite_sheet,
                              Sdl::Rect source) noexcept
         : sprite_sheet_(&sprite_sheet)
         , source_(source)
 {}
 
-void Raw_sprite_sheet::Sprite::render(Sdl::Renderer& renderer,
+void Sprite_sheet::Sprite::render(Sdl::Renderer& renderer,
                                   Complex_number position,
                                   Sdl::Flip flip)
 {
-        auto const dst = Sdl::make_rect(position, Sdl::Dimensions(source_));
+        auto const dst = Sdl::make_rect(position, Sdl::rect_dimensions(source_));
         sprite_sheet_->render(renderer, source_, dst, flip);
 }
 
-Raw_sprite_sheet::Animation::Animation(Raw_sprite_sheet& sprite_sheet,
-                                       Sdl::Rect first_frame_source,
-                                       Duration::Frames frame_delay,
-                                       int frame_count) noexcept
+Sprite_sheet::Animation::Animation(Sprite_sheet& sprite_sheet,
+                                   Sdl::Rect first_frame_source,
+                                   Duration::Frames frame_delay,
+                                   int frame_count) noexcept
         : sprite_sheet_(&sprite_sheet)
         , source_(first_frame_source)
         , timer_(frame_delay)
         , frame_count_(frame_count)
 {}
 
-void Raw_sprite_sheet::Animation::update() noexcept
+void Sprite_sheet::Animation::update() noexcept
 {
         timer_.update();
 
@@ -47,29 +45,45 @@ void Raw_sprite_sheet::Animation::update() noexcept
                 current_frame_ = 0;
 }
 
-void Raw_sprite_sheet::Animation::render(Sdl::Renderer& renderer,
+void Sprite_sheet::Animation::render(Sdl::Renderer& renderer,
                                      Complex_number position,
                                      Sdl::Flip flip)
 {
-        auto const dst = make_rect(position, Sdl::Dimensions(source_));
-        sprite_sheet_->render(renderer, source_, dst, flip);
+        auto const dst = Sdl::make_rect(position, Sdl::rect_dimensions(source_));
+        auto const source_x = source_.x + source_.w*current_frame_;
+        sprite_sheet_->render(renderer,
+                              Sdl::Rect {source_x, source_.y, source_.w, source_.h},
+                              dst,
+                              flip);
 }
 
-Sdl::Dimensions Raw_sprite_sheet::Animation::frame_dimensions() const noexcept
+Dimensions Sprite_sheet::Animation::frame_dimensions() const noexcept
 {
-        return Sdl::Dimensions(source_);
+        return Sdl::rect_dimensions(source_);
 }
 
-Raw_sprite_sheet::Raw_sprite_sheet(Sdl::Unique_texture texture) noexcept
+Sprite_sheet::Sprite_sheet(Sdl::Unique_texture texture) noexcept
         : texture_(std::move(texture))
 {}
 
-Sprite Raw_sprite_sheet::sprite(Sdl::Rect source) noexcept
+Sprite_sheet::Sprite_sheet(Sdl::Renderer& renderer,
+                           std::string const& path)
+        : Sprite_sheet(Sdl::load_texture(renderer, path))
+{}
+
+Sprite Sprite_sheet::sprite(Sdl::Rect source) noexcept
 {
         return Sprite(*this, source);
 }
 
-void Raw_sprite_sheet::render(Sdl::Renderer& renderer,
+Animation Sprite_sheet::animation(Sdl::Rect first_frame_source,
+                                  Duration::Frames frame_delay,
+                                  int frame_count) noexcept
+{
+        return Animation(*this, first_frame_source, frame_delay, frame_count);
+}
+
+void Sprite_sheet::render(Sdl::Renderer& renderer,
                           Sdl::Rect source,
                           Sdl::Rect destination,
                           Sdl::Flip flip)
@@ -82,16 +96,7 @@ void Raw_sprite_sheet::render(Sdl::Renderer& renderer,
                          flip);
 }
 
-} // Close namespace Detail
-
 namespace {
-
-boost::property_tree::ptree read_json_tree(const std::string& path)
-{
-        boost::property_tree::ptree result;
-        boost::property_tree::read_json(path, result);
-        return result;
-}
 
 template <class TransformationFunction>
 auto parse_tree(boost::property_tree::ptree tree, TransformationFunction const& f)
@@ -109,7 +114,7 @@ auto parse_tree(boost::property_tree::ptree tree, TransformationFunction const& 
         return std::unordered_map<std::string, Value>(range.begin(), range.end());
 }
 
-}
+} // Close unnamed namespace
 
 Duration::Frames Animation_properties::animation_duration() const noexcept
 {
@@ -118,7 +123,7 @@ Duration::Frames Animation_properties::animation_duration() const noexcept
 
 Sprite_sheet_config load_sprite_sheet_config(std::string const& json_path)
 {
-        return parse_tree(read_json_tree(json_path),
+        return parse_tree(Utils::read_json_tree(json_path),
                           [](boost::property_tree::ptree child)
                           {
                                   return Sdl::Rect {
@@ -132,7 +137,7 @@ Sprite_sheet_config load_sprite_sheet_config(std::string const& json_path)
 
 Animations_config load_animations_config(std::string const& json_path)
 {
-        return parse_tree(read_json_tree(json_path),
+        return parse_tree(Utils::read_json_tree(json_path),
                           [](boost::property_tree::ptree child)
                           {
                                   return Animation_properties {
@@ -154,42 +159,48 @@ Animations_durations animations_durations(Animations_config const& animations_co
         return Animations_durations(range.begin(), range.end());
 }
 
-Sprite_sheet::Sprite_sheet(Sdl::Unique_texture texture,
-                           Sprite_sheet_config sprite_sheet_config,
-                           Animations_config animations_config)
-        : sprite_sheet_(std::move(texture))
-        , sprite_sheet_config_(std::move(sprite_sheet_config))
-        , animations_config_(std::move(animations_config))
-{}
-
-Sprite_sheet::Sprite_sheet(Sdl::Renderer& renderer,
-                           std::string const& image_path,
-                           Sprite_sheet_config sprite_sheet_config,
-                           Animations_config animations_config)
-        : Sprite_sheet(Sdl::load_texture(renderer, image_path),
-                       std::move(sprite_sheet_config),
-                       std::move(animations_config))
-{}
-
-auto Sprite_sheet::sprite(std::string const& name) -> Sprite
+Resources load_resources(Sprite_sheet& sprite_sheet,
+                         Sprite_sheet_config const& sprite_sheet_config,
+                         Animations_config const& animations_config)
 {
-        auto const src = sprite_sheet_config_.at(name);
-        return sprite_sheet_.sprite(src);
-}
+        auto const is_animated =
+        [&](auto const& sprite_name)
+        {
+                return animations_config.count(sprite_name) != 0;
+        };
 
-auto Sprite_sheet::animation(std::string const& name) -> Animation
-{
-        auto const [frame_count, frame_delay] = animations_config_.at(name);
-        return sprite_sheet_.animation(animation_first_rect(name, frame_count),
-                                       frame_delay,
-                                       frame_count);
-}
+        Animations animations;
 
-Sdl::Rect Sprite_sheet::animation_first_rect(std::string const& name, int frame_count) const
-{
-        auto sprite_rect = sprite_sheet_config_.at(name);
-        sprite_rect.w /= frame_count;
-        return sprite_rect;
+        auto const add_animation =
+        [&](auto const& sprite_name, auto sprite_rect)
+        {
+                auto const [frame_count, frame_delay] = animations_config.at(sprite_name);
+                sprite_rect.w /= frame_count;
+                animations.try_emplace(sprite_name,
+                                       sprite_sheet.animation(sprite_rect,
+                                                              frame_delay,
+                                                              frame_count));
+        };
+
+        Sprites static_sprites;
+
+        auto const add_static_sprite =
+        [&](auto const& sprite_name, auto const& sprite_rect)
+        {
+                static_sprites.try_emplace(sprite_name, sprite_sheet.sprite(sprite_rect));
+        };
+
+        for (auto const& [sprite_name, sprite_rect] : sprite_sheet_config) {
+                if (is_animated(sprite_name))
+                        add_animation(sprite_name, sprite_rect);
+                else
+                        add_static_sprite(sprite_name, sprite_rect);
+        }
+
+        return {
+                animations,
+                static_sprites
+        };
 }
 
 }

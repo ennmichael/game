@@ -1,0 +1,56 @@
+{
+    "block": {
+        "x": "0",
+        "y": "0",
+        "width": "200",
+        "height": "200"
+    },
+    "idle": {
+        "x": "200",
+        "y": "0",
+        "width": "600",
+        "height": "160"
+    },
+    "jumping_in_place": {
+        "x": "800",
+        "y": "0",
+        "width": "800",
+        "height": "160"
+    },
+    "jumping_sideways": {
+        "x": "1600",
+        "y": "0",
+        "width": "200",
+        "height": "160"
+    },
+    "landing_sideways": {
+        "x": "1800",
+        "y": "0",
+        "width": "200",
+        "height": "160"
+    },
+    "preparing_to_jump_sideways": {
+        "x": "2000",
+        "y": "0",
+        "width": "300",
+        "height": "160"
+    },
+    "pulling": {
+        "x": "2300",
+        "y": "0",
+        "width": "1000",
+        "height": "160"
+    },
+    "pushing": {
+        "x": "3300",
+        "y": "0",
+        "width": "1440",
+        "height": "160"
+    },
+    "running": {
+        "x": "4740",
+        "y": "0",
+        "width": "800",
+        "height": "160"
+    }
+}

@@ -118,8 +118,24 @@ auto constexpr operator>=(Frames x, Frames y) noexcept
 {
         return x > y || x == y;
 }
-
+ 
 } // Close namespace Duration
+
+struct Dimensions {
+        int width;
+        int height;
+};
+
+constexpr bool operator==(Dimensions d1, Dimensions d2) noexcept
+{
+        return d1.width == d2.width &&
+               d1.height == d2.height;
+}
+
+constexpr bool operator!=(Dimensions d1, Dimensions d2) noexcept
+{
+        return !(d1 == d2);
+}
 
 }
 

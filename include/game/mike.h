@@ -3,6 +3,7 @@
 #include "engine/engine.h"
 #include "block.h"
 #include "utils.h"
+#include "configs.h"
 #include "boost/optional.hpp"
 #include <unordered_map>
 #include <functional>
@@ -20,11 +21,15 @@ public:
         using Optional_state = boost::optional<State>;
 
         struct State {
+                struct Expiring {
+                        
+                };
+
                 using Updater = std::function<
                         Optional_state(Mike&, Engine::Gameplay::Keyboard const&)
                 >;
 
-                Updater updater;
+                Updater updater; // TODO note that this can handle timed states really nicely
                 std::string sprite_name;
         };
 
@@ -33,9 +38,12 @@ public:
 
         using Actions_durations = std::unordered_map<std::string, Engine::Duration::Frames>;
 
+        Mike(Configs::Mike_config const& mike_config,
+             Actions_durations const& durations) noexcept;
         Mike(Engine::Complex_number position,
-             Actions_durations const& durations,
-             Engine::Sdl::Dimensions dimensions) noexcept;
+             Engine::Dimensions dimensions,
+             double speed,
+             Actions_durations const& durations) noexcept;
 
         bool is_facing_left() const noexcept;
         bool is_facing_right() const noexcept;
@@ -48,8 +56,7 @@ public:
 
         void snap_to(Engine::Gameplay::Checkbox checkbox) noexcept;
 
-        void move_left() noexcept;
-        void move_right() noexcept;
+        void update(Engine::Gameplay::Keyboard const& keyboard);
       
         Engine::Gameplay::Direction direction() const noexcept;
         Engine::Complex_number position() const noexcept;
@@ -58,6 +65,8 @@ public:
         std::string const& current_sprite_name() const noexcept;
 
 private:
+        static State expiring_state(State s);
+
         template <class Entity>
         void turn_to(Entity const& entity) noexcept(noexcept(Engine::position(entity)))
         {
@@ -69,14 +78,16 @@ private:
                         direction_ = Engine::Gameplay::Direction::none;
         }
 
+        void move_left() noexcept;
+        void move_right() noexcept;
         void move_in_direction(Engine::Gameplay::Direction direction) noexcept;
 
         Engine::Complex_number position_;
+        Engine::Dimensions dimensions_;
+        double speed_;
         Actions_durations durations_;
-        Engine::Sdl::Dimensions dimensions_;
         Engine::Gameplay::Direction direction_ = Engine::Gameplay::Direction::none;
         State state_ = idle();
-        double speed_ = 0;
 };
 
 }
