@@ -82,7 +82,7 @@ int main()
 
         signals.frame_advance.connect(on_frame_advance);
 
-        Engine::Gameplay::Main_loop main_loop;
-        main_loop.start(signals, fps);
+        Engine::Gameplay::Main_loop mainoo_loop;
+        mainoo_loop.start(signals, fps);
 }
 

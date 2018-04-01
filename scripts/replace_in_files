@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+function replace
+{
+        echo $1 $2 $3
+        find $1 -name "*.cpp" -type f -exec sed -i s/$2/$3/g {} +
+        find $1 -name "*.h" -type f -exec sed -i s/$2/$3/g {} +
+}
+
+replace src $1 $2
+replace include/game $1 $2
+replace engine/src $1 $2
+replace engine/include/engine $1 $2
+replace spacker/src $1 $2
+replace spacker/include/spacker $1 $2
+
