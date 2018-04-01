@@ -179,13 +179,9 @@ void SpriteSheet::paint_sprites(std::vector<PositionedSprite> const& sprites,
                 paint_over(image_view, sprite.const_view(), sprite.position);
 }
 
-void SpriteSheet::write_to(std::string const& base_path) const
+void SpriteSheet::write_to(std::string const& image_path,
+                           std::string const& json_path) const
 {
-        using namespace std::string_literals;
-
-        auto const image_path = base_path + ".png"s;
-        auto const json_path = base_path + ".json"s;
-
         boost::gil::png_write_view(image_path, const_view());
         boost::property_tree::write_json(json_path, tree_);
 }

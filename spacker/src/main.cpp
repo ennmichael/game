@@ -43,17 +43,20 @@ struct CommandLineOptions {
                                                      .run());
                 
                 if (vm.count("help"s)
-                    || !vm.count("output-file"s)
+                    || !vm.count("image-output"s)
+                    || !vm.count("json-output"s)
                     || !vm.count("input-files"s))
                         return description_text(desc);
 
                 return CommandLineOptions {
-                        vm["output-file"s].as<std::string>(),
+                        vm["image-output"s].as<std::string>(),
+                        vm["json-output"s].as<std::string>(),
                         vm["input-files"s].as<std::vector<std::string>>()
                 };
         }
 
-        std::string output_path;
+        std::string image_output_path;
+        std::string json_output_path;
         std::vector<std::string> input_paths;
 
 private:
@@ -76,15 +79,19 @@ private:
         {
                 po::options_description desc("Options");
                 desc.add_options()
-                        ("help", "show help screen")
+                        ("help", "show the help screen")
 
-                        ("output-file,o",
+                        ("image-output",
                          po::value<std::string>(),
-                         "specify base name for output files")
+                         "path for the output image")
+
+                        ("json-output",
+                         po::value<std::string>(),
+                         "path for the output JSON file")
 
                         ("input-files",
                          po::value<std::vector<std::string>>(),
-                         "specify input files");
+                         "specify input files, or just list them before/after other options");
 
                 return desc;
         }
@@ -104,7 +111,7 @@ int main(int argc, char **argv)
                 {
                         auto const sprites = Spacker::load_sprites(options.input_paths);
                         auto const sprite_sheet = Spacker::SpriteSheet::pack(sprites);
-                        sprite_sheet.write_to(options.output_path);
+                        sprite_sheet.write_to(options.image_output_path, options.json_output_path);
                 }
         };
 

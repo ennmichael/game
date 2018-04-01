@@ -32,7 +32,8 @@ class SpriteSheet {
 public:
         static SpriteSheet pack(std::vector<Sprite> const& sprites);
 
-        void write_to(std::string const& base_path) const;
+        void write_to(std::string const& image_path,
+                      std::string const& json_path) const;
 
 private:
         struct PositionedSprite : Sprite {
