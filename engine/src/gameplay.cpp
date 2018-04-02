@@ -2,16 +2,11 @@
 #include "utils.h"
 #include "boost/range/adaptors.hpp"
 #include <unordered_map>
-#include <optional>
 #include <exception>
 #include <cassert>
 #include <type_traits>
 #include <iterator>
 #include <algorithm>
-
-/**
- * TODO Switch to boost::optional
- */
 
 namespace Engine::Gameplay {
 

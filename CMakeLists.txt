@@ -14,7 +14,7 @@ if (BUILD_DEV_TOOLS)
         add_subdirectory(spacker)
 endif()
 
-add_executable(game src/main.cpp src/mike.cpp src/mike_sprite.cpp src/configs.cpp)
+add_executable(game src/main.cpp src/mike.cpp src/mike_sprite.cpp)
 target_include_directories(game PRIVATE "${game_SOURCE_DIR}/include/game")
 add_compile_options(game)
 

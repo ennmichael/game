@@ -14,6 +14,12 @@
 // Namely we only need a single timer for Mike, not a single timer per animation
 // And then to get the full control we need, Mike needs to control his animations, or at least
 // control the timer.
+// The single timer will be stored within the `Animations` class.
+// The interface will be `hard_switch` and `soft_switch`
+// We will also need two update functions for the state.
+// Perhaps a good design would be three functions: `on_set`, `on_unset`, `on_update`
+
+// TODO Is there even need to use boost::signals for the main loop (???)
 
 // TODO When changing states, reset the previous animation
 // There might be a genuine need for this later, and we would accomplish it

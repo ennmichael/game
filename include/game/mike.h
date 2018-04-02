@@ -3,7 +3,6 @@
 #include "engine/engine.h"
 #include "block.h"
 #include "utils.h"
-#include "configs.h"
 #include "boost/optional.hpp"
 #include "boost/property_tree/ptree.hpp"
 #include <unordered_map>
@@ -21,7 +20,7 @@ public:
         using Actions_durations = std::unordered_map<std::string, Engine::Duration::Frames>;
 
         Mike(boost::property_tree::ptree const& config,
-             Actions_durations const& actions_durations);
+             Engine::Graphics::Animations animations);
 
         bool is_facing_left() const noexcept;
         bool is_facing_right() const noexcept;
@@ -44,7 +43,21 @@ public:
 
 private:
         struct State;
-        using Optional_state = boost::optional<State>;
+        using Optional_state = boost::optional<State>; 
+
+        struct State {
+                using On_set = std::function<void(Mike&)>;
+                using On_update = std::function<Optional_state(Mike&, Engine::Gameplay::Keyboard const&)>;
+                using On_unset = std::function<void(Mike&)>;
+
+                On_set on_set;
+                On_update on_update;
+                On_unset on_unset
+
+                Animation animation;
+                Update update=[](Mike&, Engine::Gameplay::Keyboard const&) -> Optional_state
+                              { return boost::none; };
+        };
 
         class Sickness {
         public:
@@ -55,17 +68,9 @@ private:
                 void decrease() noexcept;
 
         private:
-                int percentage_;
                 int increase_rate_;
                 int decrease_rate_;
-        };
-
-        struct State {
-                using Update = std::function<Optional_state(Mike&, Engine::Gameplay::Keyboard const&)>;
-
-                std::string sprite_name;
-                Update update=[](Mike&, Engine::Gameplay::Keyboard const&) -> Optional_state
-                              { return boost::none; };
+                int percentage_=0;
         };
 
         static State idle();
@@ -103,9 +108,10 @@ private:
         double speed_;
         double jump_speed_;
         double masked_speed_;
-        Actions_durations durations_; // TODO Rename durations_ -> actions_durations_
+        Engine::Graphics::Animations animations_;
         Engine::Gameplay::Direction direction_ = Engine::Gameplay::Direction::none;
         State state_=idle();
+        Engine::Graphics::Current_animation current_animation_;
 };
 
 void apply_sickness_filter(Sdl::Renderer& renderer, Mike const& mike);

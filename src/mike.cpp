@@ -15,6 +15,7 @@ Mike::Mike(boost::property_tree::ptree const& config,
         , speed_(config.get<double>("speed"s))
         , jump_speed_(config.get<double>("jump_speed"s))
         , durations_(actions_durations)
+        , animations_(std::move(animations))
 {}
 
 bool Mike::is_facing_left() const noexcept
