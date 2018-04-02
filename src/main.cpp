@@ -10,6 +10,11 @@
 
 #include <iostream>
 
+// TODO Ditch the retared animation loading system, and do it over properly
+// Namely we only need a single timer for Mike, not a single timer per animation
+// And then to get the full control we need, Mike needs to control his animations, or at least
+// control the timer.
+
 // TODO When changing states, reset the previous animation
 // There might be a genuine need for this later, and we would accomplish it
 // via signaling, but until then, I'll hold off on this.

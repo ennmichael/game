@@ -14,6 +14,14 @@
 
 namespace Engine::Graphics {
 
+class Animations {
+public:
+        Animations()
+
+private:
+        
+};
+
 class Sprite_sheet {
 public:
         class Sprite {

@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "configs.h"
 #include "boost/optional.hpp"
+#include "boost/property_tree/ptree.hpp"
 #include <unordered_map>
 #include <functional>
 
@@ -19,13 +20,8 @@ class Mike {
 public:
         using Actions_durations = std::unordered_map<std::string, Engine::Duration::Frames>;
 
-        Mike(Configs::Mike_config const& mike_config,
-             Actions_durations const& durations) noexcept;
-        Mike(Engine::Complex_number position,
-             Engine::Dimensions dimensions,
-             double speed,
-             double jump_speed,
-             Actions_durations const& durations) noexcept;
+        Mike(boost::property_tree::ptree const& config,
+             Actions_durations const& actions_durations);
 
         bool is_facing_left() const noexcept;
         bool is_facing_right() const noexcept;
@@ -74,6 +70,8 @@ private:
 
         static State idle();
         static State running();
+        static State idle_masked();
+        static State walking_masked();
         static State jumping_in_place(Actions_durations const& durations);
         static State preparing_to_jump_sideways(Actions_durations const& durations);
         static State jumping_sideways(Actions_durations const& durations);
@@ -101,23 +99,16 @@ private:
 
         Engine::Complex_number position_;
         Engine::Dimensions dimensions_;
+        Sickness sickness_;
         double speed_;
         double jump_speed_;
+        double masked_speed_;
         Actions_durations durations_; // TODO Rename durations_ -> actions_durations_
         Engine::Gameplay::Direction direction_ = Engine::Gameplay::Direction::none;
-        Sickness sickness_;
         State state_=idle();
 };
 
-class Filter {
-public:
-        Filter(Mike const& mike) noexcept;
-
-        void render(Sdl::Renderer&);
-
-private:
-        Mike* mike_;
-};
+void apply_sickness_filter(Sdl::Renderer& renderer, Mike const& mike);
 
 }
 

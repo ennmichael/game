@@ -6,25 +6,15 @@ using namespace std::string_literals;
 
 namespace Game::Gameplay {
 
-Mike::Mike(Configs::Mike_config const& mike_config,
-           Actions_durations const& durations) noexcept
-        : Mike(mike_config.starting_position,
-               mike_config.dimensions,
-               mike_config.speed,
-               mike_config.jump_speed,
-               durations)
-{}
-
-Mike::Mike(Engine::Complex_number position,
-           Engine::Dimensions dimensions,
-           double speed,
-           double jump_speed,
-           Actions_durations const& durations) noexcept
-        : position_(position)
-        , dimensions_(dimensions)
-        , speed_(speed)
-        , jump_speed_(jump_speed)
-        , durations_(durations)
+Mike::Mike(boost::property_tree::ptree const& config,
+           Actions_durations const& actions_durations)
+        : position_(config.get<int>("x"s), config.get<int>("y"s))
+        , dimensions_(config.get<int>("width"s), config.get<int>("height"s))
+        , sickness_(config.get<int>("sickness_increase_rate"s),
+                    config.get<int>("sickness_decrease_rate"s))
+        , speed_(config.get<double>("speed"s))
+        , jump_speed_(config.get<double>("jump_speed"s))
+        , durations_(actions_durations)
 {}
 
 bool Mike::is_facing_left() const noexcept
@@ -179,6 +169,21 @@ void Mike::move_in_current_direction(double speed) noexcept
         position_ = Engine::Gameplay::translated_position(position_,
                                                           direction_,
                                                           speed);
+}
+
+void apply_sickness_filter(Sdl::Renderer& renderer, Mike const& mike)
+{
+        auto const filter_alpha =
+        [&]
+        {
+                unsigned char const min_alpha = 50;
+                unsigned char const max_alpha = 210;
+                unsigned char const dynamic_alpha = max_alpha - min_alpha;
+                return base_alpha + dynamic_alpha*mike.sickness_percentage() / 100;
+        };
+
+        auto const filter_color = Color::black().with_alpha(filter_alpha());
+        Engine::Graphics::apply_filter(renderer, filter_color);
 }
 
 }
