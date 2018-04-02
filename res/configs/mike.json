@@ -1,8 +1,10 @@
 {
         "speed": 3,
-        "jump_speed": 2,
+        "jump_speed": 2.5,
         "x": 200,
         "y": 150,
         "width": 100,
-        "height": 160
+        "height": 160,
+        "sickness_increase_rate": 0.01,
+        "sickness_decrease_rate": 0.02
 }

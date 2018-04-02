@@ -1,8 +1,6 @@
 #include "mike.h"
 #include "block.h"
-#include "mike_sprite.h"
 #include "engine/engine.h"
-#include "configs.h"
 #include <string>
 #include <utility>
 
@@ -10,20 +8,8 @@
 
 #include <iostream>
 
-// TODO Ditch the retared animation loading system, and do it over properly
-// Namely we only need a single timer for Mike, not a single timer per animation
-// And then to get the full control we need, Mike needs to control his animations, or at least
-// control the timer.
-// The single timer will be stored within the `Animations` class.
-// The interface will be `hard_switch` and `soft_switch`
-// We will also need two update functions for the state.
-// Perhaps a good design would be three functions: `on_set`, `on_unset`, `on_update`
-
 // TODO Is there even need to use boost::signals for the main loop (???)
-
-// TODO When changing states, reset the previous animation
-// There might be a genuine need for this later, and we would accomplish it
-// via signaling, but until then, I'll hold off on this.
+// ^ Test and see
 
 using namespace std::string_literals;
 using namespace std::complex_literals;
@@ -37,18 +23,22 @@ int main()
         auto window = Engine::Sdl::create_window("Title"s, 500, 500);
         auto renderer = Engine::Sdl::create_renderer(*window);
         auto sprite_sheet_config = Engine::Graphics::load_sprite_sheet_config("../res/configs/sprites.json"s);
-        auto animations_config = Engine::Graphics::load_animations_config("../res/configs/animations.json"s);
         Engine::Graphics::Sprite_sheet sprite_sheet(*renderer, "../res/sprites.png"s);
 
-        auto [animations, static_sprites] = Engine::Graphics::load_resources(sprite_sheet,
-                                                                             sprite_sheet_config,
-                                                                             animations_config);
+        // FIXME In functions for loading from files, sometimes I use "load" in names and sometimes "read"
+        
+        /**
+         * TODO Here's an idea: mike.json contains the animations, load_animations_config
+         * loads configs from a property tree.
+         */
 
-        auto const mike_config = Game::Configs::load_config<
-                Game::Configs::Mike_config>("../res/configs/mike.json");
-
-        Game::Gameplay::Mike mike(mike_config, Engine::Graphics::animations_durations(animations_config));
-        Game::Graphics::Mike_animations mike_animations(mike, animations);
+        auto const mike_animations_config = Engine::Graphics::load_animations_config(
+                        "../res/configs/animations/mike.json");
+        auto const mike_config = Engine::Utils::read_json_tree("../res/configs/mike.json"s);
+        Game::Gameplay::Mike mike(mike_config,
+                                  Engine::Graphics::animations(sprite_sheet,
+                                                               sprite_sheet_config,
+                                                               mike_animations_config));
 
         Engine::Sdl::Unique_texture block_texture = Engine::Sdl::load_texture(*renderer, "../res/sprites/block.png"s); 
 
@@ -70,13 +60,12 @@ int main()
         auto const on_frame_advance =
         [&](Engine::Gameplay::Main_loop&, Engine::Gameplay::Keyboard const& keyboard)
         {
-                mike.update(keyboard);
-
                 Engine::Sdl::render_clear(*renderer);
                 /*Engine::Sdl::render_copy(*renderer, *block_texture, blocks[0].position);
                 Engine::Sdl::render_copy(*renderer, *block_texture, blocks[1].position);*/
-                mike_animations.render_current_animation(*renderer);
-                mike_animations.update_current_animation();
+                mike.update(keyboard);
+                mike.render(*renderer);
+                mike.render_sickness_filter(*renderer);
                 Engine::Graphics::apply_filter(*renderer, Engine::Color::black().with_alpha(100));
                 Engine::Sdl::render_present(*renderer);
         };

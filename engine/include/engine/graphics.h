@@ -94,12 +94,16 @@ class Current_animation {
 public:
         explicit Current_animation(Animation& animation) noexcept;
 
-        void update() noexcept;
-        void hard_switch(Animation& new_animation) noexcept; /* Resets the frame timer */
-        void soft_switch(Animation& new_animation) noexcept; /* Doesn't reset the frame timer */
+        void hard_switch(Animation& new_animation) noexcept; /* Resets the current frame */
+        void soft_switch(Animation& new_animation) noexcept; /* Doesn't reset the current frame */
         void render(Sdl::Renderer& renderer,
                     Complex_number position,
                     Sdl::Flip flip=Sdl::Flip::none);
+
+
+        void update() noexcept;
+        bool is_finished() const noexcept;
+        void loop() noexcept;
 
 private:
         using Animations = std::unordered_map<std::string, Animation>;

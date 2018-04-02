@@ -142,19 +142,6 @@ Current_animation::Current_animation(Animation& animation) noexcept
         , frame_timer_(animation.frame_delay())
 {}
 
-void Current_animation::update() noexcept
-{
-        frame_timer_.update();
-
-        if (frame_timer_.ready()) {
-                frame_timer_.restart();
-                ++current_frame_;
-        }
-
-        if (current_frame_ == animation_->frame_count())
-                current_frame_ = 0;
-}
-
 void Current_animation::hard_switch(Animation& new_animation) noexcept
 {
         *this = Current_animation(new_animation);
@@ -170,6 +157,29 @@ void Current_animation::render(Sdl::Renderer& renderer,
                         Sdl::Flip flip)
 {
         animation_->render_frame(renderer, current_frame_, position, flip);
+}
+
+void Current_animation::update() noexcept
+{
+        if (is_finished())
+                return;
+
+        frame_timer_.update();
+        if (frame_timer_.ready()) {
+                frame_timer_.restart();
+                ++current_frame_;
+        }
+}
+
+bool Current_animation::is_finished() const noexcept
+{
+        return current_frame_ == animation_->frame_count();
+}
+
+void Current_animation::loop() noexcept
+{
+        current_frame_ = 0;
+        frame_timer_.restart();
 }
 
 void apply_filter(Sdl::Renderer& renderer, Color color)

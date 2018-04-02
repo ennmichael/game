@@ -2,19 +2,22 @@
 #include "utils.h"
 #include <unordered_map>
 
+
+#include <iostream>
+
+
 using namespace std::string_literals;
 
 namespace Game::Gameplay {
 
 Mike::Mike(boost::property_tree::ptree const& config,
-           Actions_durations const& actions_durations)
+           Engine::Graphics::Animations animations)
         : position_(config.get<int>("x"s), config.get<int>("y"s))
-        , dimensions_(config.get<int>("width"s), config.get<int>("height"s))
-        , sickness_(config.get<int>("sickness_increase_rate"s),
-                    config.get<int>("sickness_decrease_rate"s))
+        , dimensions_ {config.get<int>("width"s), config.get<int>("height"s)}
+        , sickness_(config.get<double>("sickness_increase_rate"s),
+                    config.get<double>("sickness_decrease_rate"s))
         , speed_(config.get<double>("speed"s))
         , jump_speed_(config.get<double>("jump_speed"s))
-        , durations_(actions_durations)
         , animations_(std::move(animations))
 {}
 
@@ -61,37 +64,72 @@ Engine::Gameplay::Checkbox Mike::checkbox() const noexcept
         return {position_, dimensions_};
 }
 
-std::string const& Mike::current_sprite_name() const noexcept
+void Mike::render(Engine::Sdl::Renderer& renderer)
 {
-        return state_.sprite_name;
+        current_animation_.render(renderer, position_, current_flip());
+}
+
+void Mike::render_sickness_filter(Engine::Sdl::Renderer& renderer)
+{
+        auto const filter_alpha =
+        [&]
+        {
+                unsigned char const min_alpha = 50;
+                unsigned char const max_alpha = 210;
+                unsigned char const dynamic_alpha = max_alpha - min_alpha;
+                return min_alpha + dynamic_alpha*sickness_.percentage() / 100;
+        };
+
+        auto const filter_color = Engine::Color::black().with_alpha(filter_alpha());
+        Engine::Graphics::apply_filter(renderer, filter_color);
+}
+
+Mike::Sickness::Sickness(double increase_rate, double decrease_rate) noexcept
+        : increase_rate_(increase_rate)
+        , decrease_rate_(decrease_rate)
+{}
+
+double Mike::Sickness::percentage() const noexcept
+{
+        return percentage_;
+}
+
+void Mike::Sickness::increase() noexcept
+{
+        percentage_ += increase_rate_;
+        if (percentage_ > 100.f)
+                percentage_ = 100.f;
+}
+
+void Mike::Sickness::decrease() noexcept
+{
+        percentage_ -= decrease_rate_;
+        if (percentage_ < 0.0f)
+                percentage_ = 0.0f;
 }
 
 auto Mike::idle() -> State
 {
-        return {
-                "idle"s,
+        return looping_animation("idle",
+                                 [](Mike&, Engine::Gameplay::Keyboard const& keyboard) -> Optional_state
+                                 {
+                                         if (keyboard.key_down(Engine::Sdl::Keycodes::left) ||
+                                             keyboard.key_down(Engine::Sdl::Keycodes::right))
+                                                 return running();
 
-                [](Mike& mike, Engine::Gameplay::Keyboard const& keyboard) -> Optional_state {
-                        if (keyboard.key_down(Engine::Sdl::Keycodes::left) ||
-                            keyboard.key_down(Engine::Sdl::Keycodes::right))
-                                return running();
+                                         if (keyboard.key_down(Engine::Sdl::Keycodes::space))
+                                                 return jumping_in_place();
 
-                        if (keyboard.key_down(Engine::Sdl::Keycodes::space))
-                                return jumping_in_place(mike.durations_);
-
-                        return boost::none;
-                }
-        };
+                                         return boost::none;
+                                 });
 }
 
 auto Mike::running() -> State
 {
-        return {
-                "running"s,
-
+        return looping_animation("running",
                 [](Mike& mike, Engine::Gameplay::Keyboard const& keyboard) -> Optional_state {
                         if (keyboard.key_down(Engine::Sdl::Keycodes::space))
-                                return preparing_to_jump_sideways(mike.durations_);
+                                return preparing_to_jump_sideways();
 
                         if (keyboard.key_down(Engine::Sdl::Keycodes::left)) {
                                 mike.move_left();
@@ -104,44 +142,43 @@ auto Mike::running() -> State
                         }
 
                         return idle();
-                }
-        };
+                });
 }
 
-auto Mike::jumping_in_place(Actions_durations const& durations) -> State
+auto Mike::jumping_in_place() -> State
 {
-        return expiring_state({"jumping_in_place"s}, idle(), durations);
+        return single_pass_animation("jumping_in_place", idle());
 }
 
-auto Mike::preparing_to_jump_sideways(Actions_durations const& durations) -> State
+auto Mike::preparing_to_jump_sideways() -> State
 {
-        return expiring_state({"preparing_to_jump_sideways"s}, jumping_sideways(durations), durations);
+        return single_pass_animation("preparing_to_jump_sideways", jumping_sideways());
 }
 
-auto Mike::jumping_sideways(Actions_durations const& durations) -> State
+auto Mike::jumping_sideways() -> State
 {
-        State state {
-                "jumping_sideways"s,
-
-                [](Mike& mike, Engine::Gameplay::Keyboard const&) -> Optional_state
-                {
-                        mike.move_in_current_direction(mike.jump_speed_);
-                        return boost::none;
-                }
-        };
-
-        return expiring_state(state, landing_sideways(durations), durations);
+        return single_pass_animation("jumping_sideways",
+                                     [](Mike& mike, Engine::Gameplay::Keyboard const&) -> Optional_state
+                                     {
+                                             mike.move_in_current_direction(mike.jump_speed_);
+                                             return boost::none;
+                                     },
+                                     landing_sideways());
 }
 
-auto Mike::landing_sideways(Actions_durations const& durations) -> State
+auto Mike::landing_sideways() -> State
 {
-        return expiring_state({"landing_sideways"s}, idle(), durations);
+        return single_pass_animation("landing_sideways", idle());
 }
 
-auto Mike::expiring_state(State state, State next_state, Actions_durations const& durations) -> State
+auto Mike::single_pass_animation(char const* animation_name, State next_state) -> State
 {
-        auto const duration = durations.at(state.sprite_name);
-        return Engine::Gameplay::expiring_state(std::move(state), std::move(next_state), duration);
+        return single_pass_animation(animation_name, State::on_update_do_nothing(), next_state);
+}
+
+auto Mike::looping_animation(char const* animation_name) -> State
+{
+        return looping_animation(animation_name, State::on_update_do_nothing());
 }
 
 void Mike::move_left() noexcept
@@ -172,19 +209,22 @@ void Mike::move_in_current_direction(double speed) noexcept
                                                           speed);
 }
 
-void apply_sickness_filter(Sdl::Renderer& renderer, Mike const& mike)
+void Mike::hard_switch_animation(std::string const& animation_name)
 {
-        auto const filter_alpha =
-        [&]
-        {
-                unsigned char const min_alpha = 50;
-                unsigned char const max_alpha = 210;
-                unsigned char const dynamic_alpha = max_alpha - min_alpha;
-                return base_alpha + dynamic_alpha*mike.sickness_percentage() / 100;
-        };
+        auto& animation = animations_.at(animation_name);
+        current_animation_.hard_switch(animation);
+}
 
-        auto const filter_color = Color::black().with_alpha(filter_alpha());
-        Engine::Graphics::apply_filter(renderer, filter_color);
+void Mike::soft_switch_animation(std::string const& animation_name)
+{
+        auto& animation = animations_.at(animation_name);
+        current_animation_.soft_switch(animation);
+}
+
+Engine::Sdl::Flip Mike::current_flip() const noexcept
+{
+        return is_facing_left()?
+                Engine::Sdl::Flip::horizontal : Engine::Sdl::Flip::none;
 }
 
 }

@@ -133,38 +133,19 @@ Complex_number translated_position(Complex_number position,
                                    Direction direction,
                                    double delta) noexcept;
 
-template <class State, class NextState>
-State expiring_state(State state, NextState&& next_state, Duration::Frames duration)
+/**
+ * `MainArg` would be the object who's state is being updated.
+ * This design may not work in the future.
+ */
+template <class State, class MainArg, class... Args>
+void update_state(State& state, MainArg&& main_arg, Args&&... args)
 {
-        auto old_update = state.update;
-        state.update =
-                [frame_timer = Engine::Gameplay::Frame_timer(duration),
-                 old_update  = std::move(old_update),
-                 next_state  = std::forward<NextState>(next_state)]
-                (auto&&... args) mutable -> boost::optional<State>
-                {
-                        frame_timer.update();
-                        if(auto const new_state = old_update(std::forward<decltype(args)>(args)...); 
-                           new_state)
-                                return new_state;
-                        
-                        /**
-                         * The next_state *could* be moved out of the lambda instead of being copied.
-                         * I'm not moving it as a safety caution.
-                         */
-                        if (frame_timer.ready())
-                                return next_state;
-                        return boost::none;
-                };
-
-        return state;
-}
-
-template <class State, class... Args>
-void update_state(State& state, Args&&... args)
-{
-        if (auto const new_state = state.update(std::forward<Args>(args)...); new_state)
+        if (auto const new_state = state.on_update(main_arg, std::forward<Args>(args)...);
+            new_state) {
+                state.on_unset(main_arg);
                 state = std::move(*new_state);
+                state.on_set(main_arg);
+        }
 }
 
 }

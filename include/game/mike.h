@@ -10,11 +10,6 @@
 
 namespace Game::Gameplay {
 
-// TODO Refactor hold_nearest_block -> grab_nearest_block and make sure it doesn't do redundant work
-// TODO Add a `interacting_with_block` member function
-// TODO Use `idle` to make sure that Mike keeps holding his block
-// TODO Add a `release_held_block` member function
-
 class Mike {
 public:
         using Actions_durations = std::unordered_map<std::string, Engine::Duration::Frames>;
@@ -37,52 +32,107 @@ public:
         Engine::Gameplay::Direction direction() const noexcept;
         Engine::Complex_number position() const noexcept;
         Engine::Gameplay::Checkbox checkbox() const noexcept;
-        int sickness_percentage() const noexcept;
 
-        std::string const& current_sprite_name() const noexcept;
+        void render(Engine::Sdl::Renderer& renderer);
+        void render_sickness_filter(Engine::Sdl::Renderer& renderer);
 
 private:
         struct State;
         using Optional_state = boost::optional<State>; 
 
         struct State {
-                using On_set = std::function<void(Mike&)>;
                 using On_update = std::function<Optional_state(Mike&, Engine::Gameplay::Keyboard const&)>;
+                using On_set = std::function<void(Mike&)>;
                 using On_unset = std::function<void(Mike&)>;
 
-                On_set on_set;
-                On_update on_update;
-                On_unset on_unset
+                using On_update_function_pointer = Optional_state (*)(Mike&, Engine::Gameplay::Keyboard const&);
+                using On_set_function_pointer = void (*)(Mike&);
+                using On_unset_function_pointer = void (*)(Mike&);
 
-                Animation animation;
-                Update update=[](Mike&, Engine::Gameplay::Keyboard const&) -> Optional_state
-                              { return boost::none; };
+                static constexpr On_update_function_pointer on_update_do_nothing()
+                {
+                        return [](Mike&, Engine::Gameplay::Keyboard const&) -> Optional_state
+                               { return boost::none; };
+                } 
+
+                static constexpr On_set_function_pointer on_set_do_nothing()
+                { return [](Mike&) {}; }
+
+                static constexpr On_unset_function_pointer on_unset_do_nothing()
+                { return [](Mike&) {}; }
+
+                On_update on_update=on_update_do_nothing();
+                On_set on_set=on_set_do_nothing();
+                On_unset on_unset=on_unset_do_nothing();
         };
 
         class Sickness {
         public:
-                Sickness(int increase_rate, int decrease_rate) noexcept;
+                Sickness(double increase_rate, double decrease_rate) noexcept;
 
-                int percentage() const noexcept;
+                double percentage() const noexcept;
                 void increase() noexcept;
                 void decrease() noexcept;
 
         private:
-                int increase_rate_;
-                int decrease_rate_;
-                int percentage_=0;
+                double increase_rate_;
+                double decrease_rate_;
+                double percentage_=0;
         };
 
         static State idle();
         static State running();
         static State idle_masked();
         static State walking_masked();
-        static State jumping_in_place(Actions_durations const& durations);
-        static State preparing_to_jump_sideways(Actions_durations const& durations);
-        static State jumping_sideways(Actions_durations const& durations);
-        static State landing_sideways(Actions_durations const& durations);
+        static State jumping_in_place();
+        static State preparing_to_jump_sideways();
+        static State jumping_sideways();
+        static State landing_sideways();
 
-        static State expiring_state(State state, State next_state, Actions_durations const& durations);
+        static State single_pass_animation(char const* animation_name, State next_state);
+        static State looping_animation(char const* animation_name);
+
+        template <class OnUpdate, class NextState>
+        static State single_pass_animation(char const* animation_name,
+                                           OnUpdate&& on_update,
+                                           NextState&& next_state)
+        {
+                return {
+                        [on_update  = std::forward<OnUpdate>(on_update),
+                         next_state = std::forward<NextState>(next_state)
+                        ](Mike& mike, Engine::Gameplay::Keyboard const& keyboard) -> Optional_state
+                        {
+                                mike.current_animation_.update();
+                                if (mike.current_animation_.is_finished())
+                                        return next_state;
+
+                                return on_update(mike, keyboard);
+                        },
+
+                        [animation_name](Mike& mike)
+                        { mike.hard_switch_animation(animation_name); } 
+                };
+        }
+
+        template <class OnUpdate>
+        static State looping_animation(char const* animation_name,
+                                       OnUpdate on_update)
+        {
+                return {
+                        [on_update = std::forward<OnUpdate>(on_update)]
+                        (Mike& mike, Engine::Gameplay::Keyboard const& keyboard) -> Optional_state
+                        {
+                                mike.current_animation_.update();
+                                if (mike.current_animation_.is_finished())
+                                        mike.current_animation_.loop();
+
+                                return on_update(mike, keyboard);
+                        },
+                
+                        [animation_name](Mike& mike)
+                        { mike.hard_switch_animation(animation_name); }
+                };
+        }
 
         template <class Entity>
         void turn_to(Entity const& entity) noexcept(noexcept(Engine::position(entity)))
@@ -102,6 +152,11 @@ private:
         void move_in_direction(Engine::Gameplay::Direction direction,
                                double speed) noexcept;
 
+        void hard_switch_animation(std::string const& animation_name);
+        void soft_switch_animation(std::string const& animation_name);
+
+        Engine::Sdl::Flip current_flip() const noexcept;
+
         Engine::Complex_number position_;
         Engine::Dimensions dimensions_;
         Sickness sickness_;
@@ -111,10 +166,9 @@ private:
         Engine::Graphics::Animations animations_;
         Engine::Gameplay::Direction direction_ = Engine::Gameplay::Direction::none;
         State state_=idle();
-        Engine::Graphics::Current_animation current_animation_;
+        Engine::Graphics::Current_animation current_animation_ = Engine::Graphics::Current_animation(
+                                                                                animations_.at("idle"));
 };
-
-void apply_sickness_filter(Sdl::Renderer& renderer, Mike const& mike);
 
 }
 
