@@ -73,6 +73,7 @@ int main()
         signals.frame_advance.connect(on_frame_advance);
 
         Engine::Gameplay::Main_loop main_loop;
-        main_loop.start(signals, fps);
+        main_loop.start(signals, fps); // TODO Why is this a function? Why not just use the constructor?
+                                       // Why not just a single function call?
 }
 

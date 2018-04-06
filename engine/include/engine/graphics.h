@@ -8,10 +8,6 @@
 #include <unordered_map>
 #include <string>
 
-/*
- * TODO Instead of `Sprite`, introduce the concept of a `Static_sprite`
- */
-
 namespace Engine::Graphics {
 
 class Sprite_sheet {

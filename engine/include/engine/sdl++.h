@@ -26,29 +26,29 @@ namespace Keycodes {
         auto constexpr left_shift = SDLK_LSHIFT;
 }
 
-struct Window_deleter {
-        void operator()(SDL_Window* window) const noexcept;
-};
-
-struct Renderer_deleter {
-        void operator()(SDL_Renderer* renderer) const noexcept;
-};
-
-struct Texture_deleter {
-        void operator()(SDL_Texture* texture) const noexcept;
-};
-
 using Window   = SDL_Window;
 using Renderer = SDL_Renderer;
 using Texture  = SDL_Texture;
 
-using Rect  = SDL_Rect;
-using Event = SDL_Event;
-using Optional_event = std::optional<Event>;
+struct Window_deleter {
+        void operator()(Window* window) const noexcept;
+};
+
+struct Renderer_deleter {
+        void operator()(Renderer* renderer) const noexcept;
+};
+
+struct Texture_deleter {
+        void operator()(Texture* texture) const noexcept;
+};
 
 using Unique_window   = std::unique_ptr<Window, Window_deleter>;
 using Unique_renderer = std::unique_ptr<Renderer, Renderer_deleter>;
 using Unique_texture  = std::unique_ptr<Texture, Texture_deleter>;
+
+using Rect  = SDL_Rect;
+using Event = SDL_Event;
+using Optional_event = std::optional<Event>;
 
 class Error : public std::exception {
 public:
@@ -99,7 +99,7 @@ enum class Flip {
         horizontal = SDL_FLIP_HORIZONTAL
 };
 
-void render_rect(Renderer& renderer, Rect rect);
+void render_rect(Renderer& renderer, Rect rect, Color color);
 void render_copy(Renderer& renderer, Texture& texture, Rect source, Rect destination);
 void render_copy(Renderer& renderer,
                  Texture& texture,

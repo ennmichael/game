@@ -14,10 +14,15 @@ if (BUILD_DEV_TOOLS)
         add_subdirectory(spacker)
 endif()
 
+add_subdirectory(engine)
+add_subdirectory(shadows)
+
 add_executable(game src/main.cpp src/mike.cpp)
 target_include_directories(game PRIVATE "${game_SOURCE_DIR}/include/game")
+target_link_libraries(game engine)
 add_compile_options(game)
 
-add_subdirectory(engine)
-target_link_libraries(game engine)
+add_executable(shadows shadows/src/main.cpp)
+target_link_libraries(shadows engine)
+add_compile_options(shadows)
 

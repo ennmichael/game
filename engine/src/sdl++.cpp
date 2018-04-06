@@ -35,10 +35,14 @@ Manager::Manager()
 {
         if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
                 throw Error();
+
+        if (IMG_Init(IMG_INIT_PNG) < 0)
+                throw Error();
 }
 
 Manager::~Manager()
 {
+        IMG_Quit();
         SDL_Quit();
 }
 
@@ -114,8 +118,9 @@ void render_present(Renderer& renderer)
         SDL_RenderPresent(&renderer);
 }
 
-void render_rect(Renderer& renderer, Rect rect)
+void render_rect(Renderer& renderer, Rect rect, Color color)
 {
+        Renderer_color_lock _(color);
         SDL_RenderFillRect(&renderer, &rect);
 }
 
